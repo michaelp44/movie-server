@@ -1,5 +1,6 @@
 import { Camera } from "lucide-react";
 import type { ApprovedMedia } from "@/lib/data/guest-interactions";
+import { GalleryLikeButton } from "@/components/wedding/gallery-like-button";
 
 export function GalleryGrid({ media }: { media: ApprovedMedia[] }) {
   if (!media.length) {
@@ -15,7 +16,7 @@ export function GalleryGrid({ media }: { media: ApprovedMedia[] }) {
   return (
     <div className="columns-2 gap-3 sm:columns-3" aria-label="גלריית החתונה">
       {media.map((item) => (
-        <figure key={item.id} className="mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-stone-200">
+        <figure key={item.id} className="relative mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-stone-200">
           {item.kind === "video" ? (
             <video src={item.url} controls preload="metadata" className="h-auto w-full" aria-label="סרטון מהחתונה" />
           ) : (
@@ -23,6 +24,7 @@ export function GalleryGrid({ media }: { media: ApprovedMedia[] }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={item.url} alt={item.alt} loading="lazy" decoding="async" className="h-auto w-full transition duration-500 hover:scale-[1.015]" />
           )}
+          {item.kind === "image" ? <GalleryLikeButton photoId={item.id} initialCount={item.likeCount} initialLiked={item.likedByViewer} /> : null}
         </figure>
       ))}
     </div>

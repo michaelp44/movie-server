@@ -11,6 +11,8 @@ export type ApprovedMedia = {
   url: string;
   alt: string;
   createdAt: string;
+  likeCount: number;
+  likedByViewer: boolean;
 };
 
 export async function saveGuestbookMessage(input: {
@@ -192,7 +194,7 @@ export async function markMediaUploadComplete(id: string, completionToken: strin
   return status;
 }
 
-export async function getApprovedGallery(): Promise<ApprovedMedia[]> {
+export async function getApprovedGallery(viewerHash: string | null = null): Promise<ApprovedMedia[]> {
   const supabase = createAdminClient({ optional: true });
   if (!supabase) return [];
 
@@ -204,10 +206,24 @@ export async function getApprovedGallery(): Promise<ApprovedMedia[]> {
       .eq("approved", true)
       .eq("rejected", false)
       .eq("upload_completed", true)
+      .is("hidden_at", null)
       .order("created_at", { ascending: false })
       .limit(60),
   ]);
   if (error || settings?.value !== true || !rows?.length) return [];
+
+  const { data: likes, error: likesError } = await supabase
+    .from("photo_likes")
+    .select("photo_id, visitor_hash")
+    .in("photo_id", rows.map((row) => row.id))
+    .limit(10_000);
+  if (likesError) console.error("Gallery likes could not be loaded", likesError);
+  const likeCounts = new Map<string, number>();
+  const likedIds = new Set<string>();
+  for (const like of likes ?? []) {
+    likeCounts.set(like.photo_id, (likeCounts.get(like.photo_id) ?? 0) + 1);
+    if (viewerHash && like.visitor_hash === viewerHash) likedIds.add(like.photo_id);
+  }
 
   const { data: signed } = await supabase.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(
     rows.map((row) => row.storage_path),
@@ -223,6 +239,8 @@ export async function getApprovedGallery(): Promise<ApprovedMedia[]> {
       url,
       alt: "תמונה שהועלתה מהחתונה של שובל ומיכאל",
       createdAt: row.created_at,
+      likeCount: likeCounts.get(row.id) ?? 0,
+      likedByViewer: likedIds.has(row.id),
     }];
   });
 }

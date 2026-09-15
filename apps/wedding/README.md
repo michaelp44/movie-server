@@ -111,7 +111,7 @@ The runtime-only publication flags `seating_published` and `gallery_published` l
 
 1. Create a dedicated Supabase project for the wedding site.
 2. Add the project URL, anonymous key, and service-role key to `.env.local` and Vercel.
-3. Apply both SQL files in `supabase/migrations/` in filename order using the Supabase CLI or SQL editor.
+3. Apply all SQL files in `supabase/migrations/` in filename order using the Supabase CLI or SQL editor.
 4. Do not run the demo seed in production. For a disposable local/staging project only, apply `supabase/seed.sql`.
 5. Confirm that the `wedding-media` bucket exists and is private.
 
@@ -133,6 +133,7 @@ The migration creates:
 - `sync_runs` and `sync_run_items`: preview/apply audit history and row-level outcomes
 - `rate_limits`: fixed-window rate-limit counters
 - `live_wall_reactions`: short-lived, rate-limited emoji reactions for the venue screen
+- `photo_likes`: one anonymous, reversible like per browser/device for each approved gallery photo
 
 All application tables have Row Level Security enabled. No anonymous or normal authenticated role can query invitation/guest data directly. The migration also revokes direct table privileges and grants server access to `service_role` only. Admin authorization is checked with Supabase Auth before the server uses the service role.
 

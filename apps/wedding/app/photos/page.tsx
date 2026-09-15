@@ -5,6 +5,7 @@ import { PageShell } from "@/components/wedding/page-shell";
 import { getApprovedGallery } from "@/lib/data/guest-interactions";
 import { isSupabaseAdminConfigured } from "@/lib/env";
 import { parseTableNumber } from "@/lib/table";
+import { getGalleryViewerHash } from "@/lib/gallery-likes";
 
 export const metadata: Metadata = {
   title: "התמונות שלכם | שובל ומיכאל",
@@ -20,7 +21,7 @@ export default async function PhotosPage({
 }) {
   const rawTable = (await searchParams).table;
   const tableNumber = parseTableNumber(Array.isArray(rawTable) ? rawTable[0] : rawTable);
-  const gallery = await getApprovedGallery();
+  const gallery = await getApprovedGallery(await getGalleryViewerHash());
   return (
     <PageShell
       eyebrow="הערב דרך העיניים שלכם"

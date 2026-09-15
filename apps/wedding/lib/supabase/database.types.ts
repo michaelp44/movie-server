@@ -277,6 +277,24 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["live_wall_reactions"]["Insert"]>;
         Relationships: [];
       };
+      photo_likes: {
+        Row: {
+          id: string;
+          photo_id: string;
+          invitation_id: string | null;
+          visitor_hash: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          photo_id: string;
+          invitation_id?: string | null;
+          visitor_hash: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["photo_likes"]["Insert"]>;
+        Relationships: [];
+      };
       sync_runs: {
         Row: {
           id: string;

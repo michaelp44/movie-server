@@ -20,12 +20,13 @@
 - Added automatic Open-Meteo forecast retrieval for Netanya during the seven days before the wedding.
 - Added native mobile site sharing, a printable `/qr` page, and an independent `/live/demo` wall preview.
 - Added the venue Live Wall operating runbook and weather-range/code tests.
+- Added gallery likes with per-device deduplication, counts, unlike support, rate limiting, and private server-only persistence.
 
 ## Complex tasks remaining
 
 ### 1. Provision and connect Supabase
 
-- What needs to be done: Create a dedicated project, apply both SQL migrations in filename order, configure Vercel keys, and create the first admin user.
+- What needs to be done: Create a dedicated project, apply all SQL migrations in filename order, configure Vercel keys, and create the first admin user.
 - Why complex/risky: Requires authenticated account access, secret handling, database migration, and production authorization checks.
 - Relevant files: `supabase/migrations/`, `lib/supabase/`, `lib/admin/auth.ts`, `.env.example`.
 - Current known state: The Supabase login page is open, but no account session or project credentials are available. Production controls fail closed.
