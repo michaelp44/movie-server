@@ -11,6 +11,7 @@
 - Updated sync to retain invitations without phones, flag invalid phones, reject ambiguous seating, and keep table QR identifiers valid.
 - Added Storage metadata verification and `private, no-store` headers for sensitive APIs.
 - Clarified in admin that per-table QR codes are optional.
+- Replaced the temporary homepage hero with the supplied photo of Shoval and Michael.
 
 ## Complex tasks remaining
 

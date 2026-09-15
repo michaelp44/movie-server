@@ -14,10 +14,9 @@ export function UnidentifiedHome({ guestIdentificationEnabled }: { guestIdentifi
       <main className="overflow-hidden bg-[#f6f2e9] pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
       <section className="mx-auto grid min-h-[100svh] max-w-[1600px] lg:grid-cols-[1.05fr_0.95fr]">
         <div className="relative min-h-[52svh] overflow-hidden bg-[#c9baa2] lg:order-2 lg:min-h-screen">
-          <Image src={heroImage} alt="זוג אנונימי צועד יחד בנוף ים־תיכוני — צילום זמני שיוחלף בתמונה של שובל ומיכאל" fill priority quality={88} sizes="(max-width: 1023px) 100vw, 53vw" className="object-cover object-[50%_62%]" />
+          <Image src={heroImage} alt="שובל ומיכאל חוגגים יחד במסיבה בחוץ" fill priority quality={88} sizes="(max-width: 1023px) 100vw, 53vw" className="object-cover object-[58%_55%] lg:object-[54%_55%]" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10" />
           <div className="absolute inset-5 rounded-t-[12rem] border border-white/40 sm:inset-8 lg:inset-12" />
-          <p className="absolute bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/25 bg-black/20 px-4 py-2 text-[11px] text-white/80 backdrop-blur-md">צילום אווירה זמני · התמונה האישית שלכם תחליף אותו</p>
         </div>
 
         <div className="relative flex flex-col justify-between px-5 pb-10 pt-7 sm:px-12 lg:min-h-screen lg:px-16 lg:py-12 xl:px-24">

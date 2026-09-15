@@ -288,7 +288,7 @@ The tests cover phone normalization, invitation lookup safety, session signing/e
 
 Before launch, replace the explicit placeholders in `lib/wedding-config.ts`:
 
-- real couple/hero and story photographs
+- real story photographs
 - venue name and address
 - Waze and Google Maps URLs
 - parking and transport information
@@ -299,4 +299,4 @@ Before launch, replace the explicit placeholders in `lib/wedding-config.ts`:
 - Bit URL
 - optional weather provider/forecast implementation
 
-The generated hero and Open Graph images are polished stand-ins, but they intentionally depict an anonymous couple and should be replaced with real approved photography when available.
+The homepage hero uses the approved photo supplied by the couple. The generated Open Graph image remains a polished stand-in and can be replaced with a final branded share image later.

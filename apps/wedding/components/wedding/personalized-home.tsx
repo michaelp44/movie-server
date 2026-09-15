@@ -27,7 +27,7 @@ export function PersonalizedHome({ invitation, seatingPublished }: { invitation:
       <SiteHeader />
       <main className="overflow-hidden bg-[#f6f2e9] pb-[calc(6.25rem+env(safe-area-inset-bottom))] lg:pb-24">
       <section className="relative min-h-[74svh] overflow-hidden">
-        <Image src={heroImage} alt="זוג אנונימי צועד בנוף ים־תיכוני — צילום זמני שיוחלף בתמונה של שובל ומיכאל" fill priority quality={88} sizes="100vw" className="object-cover object-[50%_60%]" />
+        <Image src={heroImage} alt="שובל ומיכאל חוגגים יחד במסיבה בחוץ" fill priority quality={88} sizes="100vw" className="object-cover object-[58%_55%] sm:object-[54%_55%]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/25" />
         <div className="relative mx-auto flex min-h-[74svh] max-w-6xl flex-col justify-between px-5 pb-10 pt-7 text-white sm:px-8 sm:pb-14">
           <div className="flex items-center justify-between text-[10px] tracking-[0.23em] text-white/75 sm:text-xs"><span>10 · 12 · 2026</span><span>SHOVAL &amp; MICHAEL</span></div>
