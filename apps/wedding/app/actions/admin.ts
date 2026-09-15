@@ -51,6 +51,13 @@ export async function saveInvitationAction(formData: FormData): Promise<void> {
   if (!normalizedPhone) withNotice("/admin/guests", "מספר הטלפון אינו מספר ישראלי תקין.");
 
   const db = createAdminDataClient();
+  if (parsed.data.tableNumber) {
+    const tableResult = await db.from("wedding_tables").upsert(
+      { table_number: parsed.data.tableNumber },
+      { onConflict: "table_number", ignoreDuplicates: true },
+    );
+    assertNoError(tableResult.error);
+  }
   const values = {
     display_name: parsed.data.displayName,
     primary_phone: parsed.data.phone,
@@ -180,7 +187,13 @@ export async function deleteSongRequestAction(formData: FormData): Promise<void>
 export async function runGuestSyncAction(formData: FormData): Promise<void> {
   await requireAdmin();
   if (formData.get("confirmation") !== "apply") throw new Error("A preview confirmation is required.");
-  const { report } = await synchronizeWeddingGuests();
+  let report;
+  try {
+    ({ report } = await synchronizeWeddingGuests());
+  } catch (error) {
+    console.error("Google Sheets synchronization failed", error);
+    withNotice("/admin/sync", "לא הצלחנו לקרוא או לסנכרן את הגיליון. בדקו את החיבור וההרשאות ונסו שוב.");
+  }
   revalidatePath("/admin", "layout");
   withNotice(
     "/admin/sync",

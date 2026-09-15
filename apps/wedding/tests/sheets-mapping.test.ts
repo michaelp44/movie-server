@@ -77,6 +77,63 @@ describe("Google Sheets mapping", () => {
     expect(result.issues).toEqual([]);
   });
 
+  it("matches a prefixed multi-tab source ID to the raw ID in the seating tab", () => {
+    const guests = mapGuestSheet([
+      ["מזהה", "טלפון", "שם להזמנה"],
+      ["family-17", "0501234567", "דניאל ונועה"],
+    ]);
+    const invitation = guests.invitations[0]!;
+    invitation.sourceTab = "אורחים";
+    invitation.sourceRowId = `אורחים:${invitation.sourceRowId}`;
+
+    const result = applySeatingSheet(guests, [
+      ["מזהה", "שולחן"],
+      ["family-17", "14"],
+    ]);
+
+    expect(result.invitations[0]?.tableNumber).toBe("14");
+    expect(result.issues).toEqual([]);
+  });
+
+  it("does not assign seating by an ambiguous display name", () => {
+    const first = mapGuestSheet([
+      ["טלפון", "שם להזמנה"],
+      ["0501234567", "משפחת כהן"],
+    ]).invitations[0]!;
+    const second = mapGuestSheet([
+      ["טלפון", "שם להזמנה"],
+      ["0521234567", "משפחת כהן"],
+    ]).invitations[0]!;
+
+    const result = applySeatingSheet({
+      invitations: [first, second],
+      issues: [],
+      resolvedHeaders: {},
+      rawHeaders: [],
+    }, [
+      ["שם להזמנה", "שולחן"],
+      ["משפחת כהן", "14"],
+    ]);
+
+    expect(result.invitations.every((invitation) => invitation.tableNumber === null)).toBe(true);
+    expect(result.issues).toEqual([expect.objectContaining({ code: "ambiguous_seating", rowNumber: 2 })]);
+  });
+
+  it("rejects contradictory table rows for the same invitation", () => {
+    const guests = mapGuestSheet([
+      ["טלפון", "שם להזמנה"],
+      ["0501234567", "דניאל ונועה"],
+    ]);
+    const result = applySeatingSheet(guests, [
+      ["טלפון", "שולחן"],
+      ["0501234567", "14"],
+      ["0501234567", "18"],
+    ]);
+
+    expect(result.invitations[0]?.tableNumber).toBeNull();
+    expect(result.issues).toEqual([expect.objectContaining({ code: "ambiguous_seating", rowNumber: 3 })]);
+  });
+
   it("reports duplicates instead of silently overwriting them", () => {
     const result = mapGuestSheet([
       ["שם", "טלפון"],

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   isGuestIdentificationConfigured,
+  isGoogleSheetsConfigured,
   isPublicSupabaseConfigured,
   isSupabaseAdminConfigured,
 } from "@/lib/env";
@@ -11,6 +12,10 @@ const keys = [
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
   "WEDDING_DEMO_MODE",
+  "GOOGLE_SHEET_ID",
+  "GOOGLE_SHEET_TAB_NAMES",
+  "GOOGLE_SERVICE_ACCOUNT_EMAIL",
+  "GOOGLE_PRIVATE_KEY",
 ] as const;
 
 const originalValues = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
@@ -51,5 +56,16 @@ describe("integration availability", () => {
     process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key-with-at-least-twenty-characters";
     expect(isSupabaseAdminConfigured()).toBe(true);
     expect(isGuestIdentificationConfigured()).toBe(true);
+  });
+
+  it("requires the complete Google Sheets service-account configuration", () => {
+    expect(isGoogleSheetsConfigured()).toBe(false);
+    process.env.GOOGLE_SHEET_ID = "sheet-id-with-enough-characters";
+    process.env.GOOGLE_SHEET_TAB_NAMES = "אורחים";
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = "wedding-sync@example.iam.gserviceaccount.com";
+    expect(isGoogleSheetsConfigured()).toBe(false);
+
+    process.env.GOOGLE_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\nexample\n-----END PRIVATE KEY-----";
+    expect(isGoogleSheetsConfigured()).toBe(true);
   });
 });

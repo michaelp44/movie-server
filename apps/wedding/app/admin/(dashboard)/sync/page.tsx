@@ -6,23 +6,42 @@ import { PageHeader } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { getRecentSyncRuns } from "@/lib/admin";
+import { isGoogleSheetsConfigured } from "@/lib/env";
 import { previewWeddingSync, type SyncPreview } from "@/lib/sync";
+
+async function loadPreview(requested: boolean, configured: boolean) {
+  if (!requested || !configured) return { preview: null, error: null };
+  try {
+    return { preview: await previewWeddingSync(), error: null };
+  } catch (error) {
+    console.error("Google Sheets sync preview failed", error);
+    return {
+      preview: null,
+      error: "לא הצלחנו לקרוא את הגיליון. בדקו שהוא משותף ל-service account ושהטאבים הוגדרו נכון.",
+    };
+  }
+}
 
 export default async function AdminSyncPage({ searchParams }: { searchParams: Promise<{ preview?: string; notice?: string }> }) {
   const params = await searchParams;
-  const [runs, preview] = await Promise.all([
+  const configured = isGoogleSheetsConfigured();
+  const [runs, previewResult] = await Promise.all([
     getRecentSyncRuns(),
-    params.preview === "1" ? previewWeddingSync() : Promise.resolve(null),
+    loadPreview(params.preview === "1", configured),
   ]);
   return (
     <>
       <PageHeader
         title="Google Sheets"
         description="הגיליון הוא מקור האמת. תצוגה מקדימה תמיד קוראת את המידע מחדש ואינה משנה הזמנות. רשומות שנעלמו מסומנות לבדיקה ולעולם אינן נמחקות אוטומטית."
-        action={<Link href="/admin/sync?preview=1" className="inline-flex min-h-11 items-center rounded-xl bg-[#1d1b18] px-5 text-sm font-semibold text-white">הכנת תצוגה מקדימה</Link>}
+        action={configured
+          ? <Link href="/admin/sync?preview=1" className="inline-flex min-h-11 items-center rounded-xl bg-[#1d1b18] px-5 text-sm font-semibold text-white">הכנת תצוגה מקדימה</Link>
+          : <span aria-disabled="true" className="inline-flex min-h-11 cursor-not-allowed items-center rounded-xl bg-black/10 px-5 text-sm font-semibold text-black/40">הכנת תצוגה מקדימה</span>}
       />
       <AdminNotice>{params.notice}</AdminNotice>
-      {preview ? <PreviewPanel preview={preview} /> : null}
+      {!configured ? <AdminNotice>חיבור Google Sheets עדיין אינו מוגדר. הוסיפו את משתני הסביבה ושתפו את הגיליון עם ה-service account.</AdminNotice> : null}
+      <AdminNotice>{previewResult.error ?? undefined}</AdminNotice>
+      {previewResult.preview ? <PreviewPanel preview={previewResult.preview} /> : null}
       <section className="mt-10">
         <h2 className="font-serif text-3xl">יומן סנכרונים</h2>
         <div className="mt-4 overflow-x-auto rounded-2xl border border-black/10 bg-white">

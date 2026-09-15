@@ -134,6 +134,9 @@ create index song_requests_created_at_idx on public.song_requests (created_at de
 create unique index song_requests_invitation_song_unique
   on public.song_requests (invitation_id, lower(song), lower(artist))
   where invitation_id is not null;
+create unique index song_requests_anonymous_song_unique
+  on public.song_requests (lower(display_name), lower(song), lower(artist))
+  where invitation_id is null and display_name is not null;
 
 create table public.site_settings (
   key text primary key check (key ~ '^[a-z][a-z0-9_]{1,63}$'),

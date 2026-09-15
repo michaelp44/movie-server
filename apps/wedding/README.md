@@ -125,12 +125,14 @@ The migration creates:
 - `guests`: optional individual people related to an invitation
 - `photo_uploads`: private Storage metadata and moderation state
 - `guestbook_messages`: private messages and moderation state
-- `song_requests`: guest song requests with per-invitation duplicate protection
+- `song_requests`: guest song requests with per-invitation duplicate protection; unidentified submissions are deduplicated by display name, song, and artist
 - `site_settings`: seating and gallery publication flags
 - `sync_runs` and `sync_run_items`: preview/apply audit history and row-level outcomes
 - `rate_limits`: fixed-window rate-limit counters
 
 All application tables have Row Level Security enabled. No anonymous or normal authenticated role can query invitation/guest data directly. The migration also revokes direct table privileges and grants server access to `service_role` only. Admin authorization is checked with Supabase Auth before the server uses the service role.
+
+Song-request uniqueness is enforced both before insertion and by database indexes, so two matching submissions arriving at the same time cannot create an accidental duplicate.
 
 ### Storage
 

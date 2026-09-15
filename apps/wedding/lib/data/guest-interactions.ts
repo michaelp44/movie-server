@@ -41,7 +41,7 @@ export async function saveSongRequest(input: {
     .limit(1);
   duplicateQuery = input.invitationId
     ? duplicateQuery.eq("invitation_id", input.invitationId)
-    : duplicateQuery.is("invitation_id", null);
+    : duplicateQuery.is("invitation_id", null).ilike("display_name", input.displayName);
   const { data: existing, error: lookupError } = await duplicateQuery;
 
   if (lookupError) throw lookupError;
@@ -53,6 +53,7 @@ export async function saveSongRequest(input: {
     song: input.song,
     artist: input.artist,
   });
+  if (error?.code === "23505") return "duplicate" as const;
   if (error) throw error;
   return "created" as const;
 }

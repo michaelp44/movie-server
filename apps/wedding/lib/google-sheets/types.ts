@@ -47,6 +47,7 @@ export interface MappingIssue {
     | "invalid_phone"
     | "invalid_number"
     | "duplicate_identity"
+    | "ambiguous_seating"
     | "unmatched_seating";
   message: string;
 }

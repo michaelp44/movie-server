@@ -338,6 +338,39 @@ function seatingIdentityKeys(
   return keys;
 }
 
+function invitationSeatingIdentityKeys(invitation: MappedInvitation): string[] {
+  const keys = [
+    `source:${invitation.sourceRowId}`,
+    `phone:${invitation.normalizedPhone}`,
+    `name:${invitation.displayName.toLocaleLowerCase("he")}`,
+  ];
+  const tabPrefix = invitation.sourceTab ? `${invitation.sourceTab}:` : null;
+  if (tabPrefix && invitation.sourceRowId.startsWith(tabPrefix)) {
+    keys.push(`source:${invitation.sourceRowId.slice(tabPrefix.length)}`);
+  }
+  return [...new Set(keys)];
+}
+
+function buildSeatingLookup(invitations: MappedInvitation[]) {
+  const lookup = new Map<string, MappedInvitation>();
+  const ambiguous = new Set<string>();
+
+  for (const invitation of invitations) {
+    for (const key of invitationSeatingIdentityKeys(invitation)) {
+      if (ambiguous.has(key)) continue;
+      const current = lookup.get(key);
+      if (current && current !== invitation) {
+        lookup.delete(key);
+        ambiguous.add(key);
+      } else {
+        lookup.set(key, invitation);
+      }
+    }
+  }
+
+  return { lookup, ambiguous };
+}
+
 export function applySeatingSheet(
   guestResult: MappingResult,
   seatingValues: string[][] | undefined,
@@ -361,25 +394,48 @@ export function applySeatingSheet(
     return { ...guestResult, issues: [...guestResult.issues, ...seatingIssues] };
   }
 
-  const lookup = new Map<string, MappedInvitation>();
-  for (const invitation of guestResult.invitations) {
-    lookup.set(`source:${invitation.sourceRowId}`, invitation);
-    lookup.set(`phone:${invitation.normalizedPhone}`, invitation);
-    lookup.set(`name:${invitation.displayName.toLocaleLowerCase("he")}`, invitation);
-  }
+  const { lookup, ambiguous } = buildSeatingLookup(guestResult.invitations);
 
   const tableBySourceId = new Map<string, string>();
+  const conflictingSourceIds = new Set<string>();
   for (const row of rowsToObjects(rawHeaders, seatingValues.slice(headerIndex + 1), headerIndex + 2)) {
     const table = cell(row.values, resolved, "tableNumber");
     if (!table) continue;
-    const match = seatingIdentityKeys(row.values, resolved)
-      .map((key) => lookup.get(key))
-      .find(Boolean);
+    const keys = seatingIdentityKeys(row.values, resolved);
+    const matches = new Set(keys.flatMap((key) => {
+      const invitation = lookup.get(key);
+      return invitation ? [invitation] : [];
+    }));
+    const hasAmbiguousKey = keys.some((key) => ambiguous.has(key));
+
+    if (matches.size > 1 || (matches.size === 0 && hasAmbiguousKey)) {
+      seatingIssues.push({
+        rowNumber: row.rowNumber,
+        code: "ambiguous_seating",
+        message: `Seating row ${row.rowNumber} matches more than one invitation. Add a unique phone or source ID.`,
+      });
+      continue;
+    }
+
+    const [match] = [...matches];
     if (!match) {
       seatingIssues.push({
         rowNumber: row.rowNumber,
         code: "unmatched_seating",
         message: `Seating row ${row.rowNumber} could not be matched to an invitation.`,
+      });
+      continue;
+    }
+
+    if (conflictingSourceIds.has(match.sourceRowId)) continue;
+    const existingTable = tableBySourceId.get(match.sourceRowId);
+    if (existingTable && existingTable !== table) {
+      tableBySourceId.delete(match.sourceRowId);
+      conflictingSourceIds.add(match.sourceRowId);
+      seatingIssues.push({
+        rowNumber: row.rowNumber,
+        code: "ambiguous_seating",
+        message: `Seating rows assign ${match.displayName} to both table ${existingTable} and table ${table}.`,
       });
       continue;
     }

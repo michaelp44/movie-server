@@ -165,6 +165,10 @@ export function getGoogleSheetsConfig(options?: OptionalConfig): GoogleSheetsCon
   );
 }
 
+export function isGoogleSheetsConfigured(): boolean {
+  return getGoogleSheetsConfig({ optional: true }) !== null;
+}
+
 export function getSiteUrl(): string {
   const value = process.env.NEXT_PUBLIC_SITE_URL ?? "https://wedding.my-rem.com";
   const result = z.string().url().safeParse(value);
