@@ -43,7 +43,7 @@ export async function listAdminInvitations(options: { search?: string; status?: 
   let query = db
     .from("invitations")
     .select(
-      "id, display_name, normalized_phone, number_invited, number_confirmed, rsvp_status, table_number, guest_group, source_row_id, missing_from_source, secure_token, updated_at",
+      "id, display_name, primary_phone, normalized_phone, number_invited, number_confirmed, rsvp_status, table_number, guest_group, source_row_id, missing_from_source, secure_token, updated_at",
     )
     .order("display_name")
     .limit(200);
@@ -52,13 +52,14 @@ export async function listAdminInvitations(options: { search?: string; status?: 
   }
   if (options.search?.trim()) {
     const safe = options.search.trim().replace(/[,%()]/g, "");
-    query = query.or(`display_name.ilike.%${safe}%,normalized_phone.ilike.%${safe}%`);
+    query = query.or(`display_name.ilike.%${safe}%,primary_phone.ilike.%${safe}%,normalized_phone.ilike.%${safe}%`);
   }
   const { data, error } = await query;
   throwOnError(error);
   return (data ?? []).map((row) => ({
     id: String(row.id),
     displayName: String(row.display_name),
+    primaryPhone: row.primary_phone ? String(row.primary_phone) : null,
     normalizedPhone: row.normalized_phone ? String(row.normalized_phone) : null,
     numberInvited: Number(row.number_invited),
     numberConfirmed: Number(row.number_confirmed),

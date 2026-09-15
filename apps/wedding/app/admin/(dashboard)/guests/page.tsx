@@ -49,7 +49,10 @@ export default async function AdminGuestsPage({
           <details key={invitation.id} className="group border-b border-black/10 last:border-0">
             <summary className="grid cursor-pointer gap-2 px-5 py-4 marker:hidden lg:grid-cols-[1.5fr_1fr_100px_100px_100px_80px] lg:items-center lg:gap-4">
               <span className="font-semibold">{invitation.displayName}{invitation.missingFromSource ? <span className="ms-2 text-xs text-red-700">חסר בגיליון</span> : null}</span>
-              <span dir="ltr" className="w-fit text-sm tabular-nums text-black/60">{invitation.normalizedPhone ?? "—"}</span>
+              <span dir="ltr" className="w-fit text-sm tabular-nums text-black/60">
+                {invitation.normalizedPhone ?? invitation.primaryPhone ?? "—"}
+                {invitation.primaryPhone && !invitation.normalizedPhone ? <small className="ms-2 text-red-700" dir="rtl">דורש תיקון</small> : null}
+              </span>
               <span className="text-sm">{invitation.numberConfirmed}/{invitation.numberInvited}</span>
               <span><StatusBadge status={invitation.rsvpStatus} /></span>
               <span className="text-sm">{invitation.tableNumber ?? "—"}</span>
@@ -71,7 +74,7 @@ function InvitationForm({ invitation, className = "" }: { invitation?: Awaited<R
     <form action={saveInvitationAction} className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-4 ${className}`}>
       {invitation ? <input type="hidden" name="id" value={invitation.id} /> : null}
       <Field label="שם ההזמנה" name="displayName" required defaultValue={invitation?.displayName} />
-      <Field label="טלפון (אפשר להשלים בהמשך)" name="phone" dir="ltr" defaultValue={invitation?.normalizedPhone ?? ""} />
+      <Field label="טלפון (אפשר להשלים בהמשך)" name="phone" dir="ltr" defaultValue={invitation?.primaryPhone ?? invitation?.normalizedPhone ?? ""} />
       <Field label="מספר מוזמנים" name="numberInvited" type="number" min={1} max={30} required defaultValue={invitation?.numberInvited ?? 1} />
       <Field label="מספר מאושרים" name="numberConfirmed" type="number" min={0} max={30} required defaultValue={invitation?.numberConfirmed ?? 0} />
       <SelectField label="סטטוס" name="rsvpStatus" defaultValue={invitation?.rsvpStatus ?? "pending"}>

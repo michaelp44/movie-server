@@ -13,6 +13,7 @@ export interface AdminOverview {
 export interface AdminInvitation {
   id: string;
   displayName: string;
+  primaryPhone: string | null;
   normalizedPhone: string | null;
   numberInvited: number;
   numberConfirmed: number;
