@@ -160,7 +160,7 @@ export const weddingConfig: WeddingConfig = {
     googleMaps: "https://www.google.com/maps/search/?api=1&query=5.91%20%D7%A9%D7%93%D7%A8%D7%95%D7%AA%20%D7%A2%D7%95%D7%91%D7%93%20%D7%91%D7%9F%20%D7%A2%D7%9E%D7%99%202%20%D7%A0%D7%AA%D7%A0%D7%99%D7%94",
   },
   gift: {
-    bitUrl: process.env.NEXT_PUBLIC_BIT_URL ?? "",
+    bitUrl: process.env.NEXT_PUBLIC_BIT_URL ?? "https://www.bitpay.co.il/app/share-info?i=W-K2MGPh&j=true",
     bitPhone: "0503062269",
     introduction:
       "הנוכחות שלכם היא המתנה הכי משמחת בשבילנו. למי שבכל זאת רוצה לפנק, אפשר לעשות זאת כאן בנחת.",

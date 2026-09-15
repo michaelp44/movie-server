@@ -318,7 +318,6 @@ Before launch, replace the explicit placeholders in `lib/wedding-config.ts`:
 - final menu and food photography
 - final story copy
 - confirmed FAQ answers
-- optional personal Bit payment link, if one is created inside Bit; the configured phone-copy flow already works
 - optional weather provider/forecast implementation
 
 The homepage hero uses the approved photo supplied by the couple. The generated Open Graph image remains a polished stand-in and can be replaced with a final branded share image later.

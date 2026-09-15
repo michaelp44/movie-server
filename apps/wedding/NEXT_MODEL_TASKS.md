@@ -15,6 +15,7 @@
 - Added the Live Wedding Wall, combined guest sharing, AI moderation pipeline, admin controls, reactions, QR assets, demo rotation, and tests.
 - Prepared simple readable backups of all wedding tables and uploaded media to the attached `My Passport` drive.
 - Replaced venue placeholders with verified 5.91 details, working Waze/Google Maps routes, parking guidance, calendar location, and a Bit phone-copy flow.
+- Connected the official Bit collection link for direct guest payments.
 
 ## Complex tasks remaining
 

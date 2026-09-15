@@ -11,5 +11,6 @@ describe("production wedding configuration", () => {
   it("includes the venue in calendar exports and the configured Bit phone", () => {
     expect(getCalendarEvent().location).toContain("5.91");
     expect(weddingConfig.gift.bitPhone).toBe("0503062269");
+    expect(new URL(weddingConfig.gift.bitUrl).hostname).toBe("www.bitpay.co.il");
   });
 });
