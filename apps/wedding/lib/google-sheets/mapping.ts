@@ -107,6 +107,10 @@ function cleanCell(value: unknown): string {
   return String(value ?? "").normalize("NFKC").trim();
 }
 
+function normalizedIdentityName(value: string): string {
+  return cleanCell(value).toLocaleLowerCase("he").replace(/\s+/g, " ");
+}
+
 /** Returns an E.164-like Israeli canonical value, for example +972501234567. */
 export function normalizeSheetPhone(input: unknown): string | null {
   return normalizeIsraeliPhone(cleanCell(input));
@@ -244,12 +248,12 @@ export function mapGuestSheet(values: string[][], config: SheetMappingConfig = {
   const headerIndex = findHeaderRow(
     values,
     config,
-    (resolved) => Boolean(resolved.displayName && resolved.primaryPhone),
+    (resolved) => Boolean(resolved.displayName),
   );
   const rawHeaders = (values[headerIndex] ?? []).map(cleanCell);
   const issues: MappingIssue[] = [];
-  const resolvedHeaders = resolveHeaders(rawHeaders, config, issues, ["displayName", "primaryPhone"]);
-  if (!resolvedHeaders.displayName || !resolvedHeaders.primaryPhone) {
+  const resolvedHeaders = resolveHeaders(rawHeaders, config, issues, ["displayName"]);
+  if (!resolvedHeaders.displayName) {
     return { invitations: [], issues, resolvedHeaders, rawHeaders };
   }
 
@@ -259,27 +263,27 @@ export function mapGuestSheet(values: string[][], config: SheetMappingConfig = {
     const displayName = cell(row.values, resolvedHeaders, "displayName");
     const primaryPhone = cell(row.values, resolvedHeaders, "primaryPhone");
     if (!displayName && !primaryPhone) continue;
-    if (!displayName || !primaryPhone) {
+    if (!displayName) {
       issues.push({
         rowNumber: row.rowNumber,
         code: "missing_identity",
-        message: `Row ${row.rowNumber}: both invitation name and phone are required.`,
+        message: `Row ${row.rowNumber}: an invitation name is required.`,
       });
       continue;
     }
-    const normalizedPhone = normalizeSheetPhone(primaryPhone);
-    if (!normalizedPhone) {
+    const normalizedPhone = primaryPhone ? normalizeSheetPhone(primaryPhone) : null;
+    if (primaryPhone && !normalizedPhone) {
       issues.push({
         rowNumber: row.rowNumber,
         field: "primaryPhone",
         code: "invalid_phone",
         message: `Row ${row.rowNumber}: the phone number is not a valid Israeli number.`,
       });
-      continue;
     }
     const explicitSourceId = cell(row.values, resolvedHeaders, "sourceRowId");
-    const sourceRowId = explicitSourceId || `phone:${normalizedPhone}`;
-    const prior = seen.get(sourceRowId) ?? seen.get(`phone:${normalizedPhone}`);
+    const sourceRowId = explicitSourceId || `name:${normalizedIdentityName(displayName)}`;
+    const prior = seen.get(sourceRowId)
+      ?? (normalizedPhone ? seen.get(`phone:${normalizedPhone}`) : undefined);
     if (prior) {
       issues.push({
         rowNumber: row.rowNumber,
@@ -289,7 +293,7 @@ export function mapGuestSheet(values: string[][], config: SheetMappingConfig = {
       continue;
     }
     seen.set(sourceRowId, row.rowNumber);
-    seen.set(`phone:${normalizedPhone}`, row.rowNumber);
+    if (normalizedPhone) seen.set(`phone:${normalizedPhone}`, row.rowNumber);
 
     const numberInvited = parseCount(
       cell(row.values, resolvedHeaders, "numberInvited"),
@@ -310,7 +314,7 @@ export function mapGuestSheet(values: string[][], config: SheetMappingConfig = {
       sourceRowId,
       sourceRowNumber: row.rowNumber,
       displayName,
-      primaryPhone,
+      primaryPhone: primaryPhone || null,
       normalizedPhone,
       numberInvited,
       numberConfirmed: Math.min(numberConfirmed, numberInvited),
@@ -341,9 +345,9 @@ function seatingIdentityKeys(
 function invitationSeatingIdentityKeys(invitation: MappedInvitation): string[] {
   const keys = [
     `source:${invitation.sourceRowId}`,
-    `phone:${invitation.normalizedPhone}`,
     `name:${invitation.displayName.toLocaleLowerCase("he")}`,
   ];
+  if (invitation.normalizedPhone) keys.push(`phone:${invitation.normalizedPhone}`);
   const tabPrefix = invitation.sourceTab ? `${invitation.sourceTab}:` : null;
   if (tabPrefix && invitation.sourceRowId.startsWith(tabPrefix)) {
     keys.push(`source:${invitation.sourceRowId.slice(tabPrefix.length)}`);

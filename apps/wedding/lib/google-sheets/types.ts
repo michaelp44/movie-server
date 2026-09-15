@@ -27,8 +27,8 @@ export interface MappedInvitation {
   sourceRowId: string;
   sourceRowNumber: number;
   displayName: string;
-  primaryPhone: string;
-  normalizedPhone: string;
+  primaryPhone: string | null;
+  normalizedPhone: string | null;
   numberInvited: number;
   numberConfirmed: number;
   rsvpStatus: RsvpStatus;

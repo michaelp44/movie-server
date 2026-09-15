@@ -32,7 +32,7 @@ create table public.invitations (
   id uuid primary key default gen_random_uuid(),
   display_name text not null check (char_length(trim(display_name)) between 1 and 160),
   primary_phone text,
-  normalized_phone text not null unique check (normalized_phone ~ '^\+972[0-9]{8,9}$'),
+  normalized_phone text unique check (normalized_phone is null or normalized_phone ~ '^\+972[0-9]{8,9}$'),
   number_invited integer not null default 1 check (number_invited between 1 and 30),
   number_confirmed integer not null default 0 check (number_confirmed between 0 and 30),
   rsvp_status public.rsvp_status not null default 'pending',

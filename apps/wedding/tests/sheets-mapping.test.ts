@@ -64,6 +64,36 @@ describe("Google Sheets mapping", () => {
     });
   });
 
+  it("keeps real-sheet invitations that do not have a phone yet", () => {
+    const result = mapGuestSheet([
+      ["שם ההזמנה / משפחה", "כמות פוטנציאלית", "טלפון"],
+      ["משפחת ישראלי", "4", ""],
+    ]);
+
+    expect(result.issues).toEqual([]);
+    expect(result.invitations[0]).toMatchObject({
+      displayName: "משפחת ישראלי",
+      primaryPhone: null,
+      normalizedPhone: null,
+      numberInvited: 4,
+      sourceRowId: "name:משפחת ישראלי",
+    });
+  });
+
+  it("keeps an invitation with an invalid phone but reports it for review", () => {
+    const result = mapGuestSheet([
+      ["שם ההזמנה / משפחה", "טלפון"],
+      ["משפחת ישראלי", "1234"],
+    ]);
+
+    expect(result.invitations[0]).toMatchObject({
+      displayName: "משפחת ישראלי",
+      primaryPhone: "1234",
+      normalizedPhone: null,
+    });
+    expect(result.issues).toEqual([expect.objectContaining({ code: "invalid_phone", rowNumber: 2 })]);
+  });
+
   it("overlays a separate seating tab without requiring fixed columns", () => {
     const guests = mapGuestSheet([
       ["טלפון", "שם להזמנה"],

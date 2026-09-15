@@ -121,7 +121,7 @@ supabase db push
 The migration creates:
 
 - `wedding_tables`: table number/name, capacity, notes, and sort order
-- `invitations`: household-level identity, normalized phone, RSVP, seating, source metadata, and random secure token
+- `invitations`: household-level identity, optional normalized phone, RSVP, seating, source metadata, and random secure token
 - `guests`: optional individual people related to an invitation
 - `photo_uploads`: private Storage metadata and moderation state
 - `guestbook_messages`: private messages and moderation state
@@ -182,7 +182,9 @@ The RSVP values `ממתין`, `מגיע`, and `לא מגיע` map to `pending`, 
 
 The workbook's `שולחנות` tab is currently a capacity/summary sheet; invitation assignments already live in both guest tabs, so do not configure it as a separate seating tab. Capacities may be entered in the admin table screen.
 
-The current sheet does not expose an immutable source ID. Until one is added, the adapter falls back to the normalized phone as source identity. For more resilient long-term sync, add a unique, never-changing `מזהה שורה` (or `source_row_id`) column to both guest tabs; the adapter already recognizes it.
+The sheet intentionally permits invitations to be added before a phone is known. The database and adapter preserve those rows with a nullable phone; they appear in admin totals but cannot identify on the public site until a valid phone is added.
+
+The current sheet does not expose an immutable source ID. Until one is added, the adapter falls back to a normalized invitation name within each source tab, which also keeps an invitation stable when its phone is filled in later. Duplicate names are reported as conflicts instead of being merged. For more resilient long-term sync, add a unique, never-changing `מזהה שורה` (or `source_row_id`) column to both guest tabs; the adapter already recognizes it.
 
 ### Google authentication
 

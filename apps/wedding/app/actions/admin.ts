@@ -23,7 +23,7 @@ const invitationSchema = z
   .object({
     id: z.string().uuid().optional().or(z.literal("")),
     displayName: z.string().trim().min(2).max(120),
-    phone: z.string().trim().min(8).max(30),
+    phone: z.string().trim().max(30),
     numberInvited: z.coerce.number().int().min(1).max(30),
     numberConfirmed: z.coerce.number().int().min(0).max(30),
     rsvpStatus: z.enum(["pending", "confirmed", "declined", "maybe"]),
@@ -47,8 +47,8 @@ export async function saveInvitationAction(formData: FormData): Promise<void> {
     guestGroup: formData.get("guestGroup"),
   });
   if (!parsed.success) withNotice("/admin/guests", parsed.error.issues[0]?.message ?? "הפרטים אינם תקינים.");
-  const normalizedPhone = normalizeSheetPhone(parsed.data.phone);
-  if (!normalizedPhone) withNotice("/admin/guests", "מספר הטלפון אינו מספר ישראלי תקין.");
+  const normalizedPhone = parsed.data.phone ? normalizeSheetPhone(parsed.data.phone) : null;
+  if (parsed.data.phone && !normalizedPhone) withNotice("/admin/guests", "מספר הטלפון אינו מספר ישראלי תקין.");
 
   const db = createAdminDataClient();
   if (parsed.data.tableNumber) {
@@ -60,7 +60,7 @@ export async function saveInvitationAction(formData: FormData): Promise<void> {
   }
   const values = {
     display_name: parsed.data.displayName,
-    primary_phone: parsed.data.phone,
+    primary_phone: parsed.data.phone || null,
     normalized_phone: normalizedPhone,
     number_invited: parsed.data.numberInvited,
     number_confirmed: parsed.data.numberConfirmed,

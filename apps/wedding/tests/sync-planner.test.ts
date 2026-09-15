@@ -51,6 +51,26 @@ describe("sync plan", () => {
     expect(plan.additions).toHaveLength(0);
   });
 
+  it("syncs phone-less invitations by source identity and adds a phone later", () => {
+    const withoutPhone = source({
+      sourceRowId: "name:משפחת ישראלי",
+      primaryPhone: null,
+      normalizedPhone: null,
+    });
+    const stored = existing({
+      sourceRowId: "name:משפחת ישראלי",
+      primaryPhone: null,
+      normalizedPhone: null,
+      numberConfirmed: 2,
+      tableNumber: "14",
+    });
+    expect(buildSyncPlan([withoutPhone], [stored]).unchanged).toHaveLength(1);
+
+    const withPhone = source({ sourceRowId: "name:משפחת ישראלי" });
+    const update = buildSyncPlan([withPhone], [stored]).updates[0];
+    expect(update?.changes.map((change) => change.field)).toEqual(["primaryPhone", "normalizedPhone"]);
+  });
+
   it("flags missing source-managed records but not manually-created records", () => {
     const plan = buildSyncPlan([], [existing(), existing({ id: "manual", sourceRowId: null, normalizedPhone: "+972522222222" })]);
     expect(plan.missing.map((item) => item.invitation.id)).toEqual(["db-1"]);

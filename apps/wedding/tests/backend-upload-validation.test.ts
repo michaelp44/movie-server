@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { uploadLimits, validateUploadBatch } from "@/lib/upload/validation";
+import { storedUploadMatches, uploadLimits, validateUploadBatch } from "@/lib/upload/validation";
 
 describe("upload validation", () => {
   it("accepts supported images and short videos and derives trusted extensions", () => {
@@ -16,5 +16,32 @@ describe("upload validation", () => {
     expect(validateUploadBatch([{ name: "note.txt", type: "text/plain", size: 100 }]).success).toBe(false);
     expect(validateUploadBatch([{ name: "large.jpg", type: "image/jpeg", size: uploadLimits.maxImageBytes + 1 }]).success).toBe(false);
     expect(validateUploadBatch(Array.from({ length: 11 }, (_, index) => ({ name: `${index}.jpg`, type: "image/jpeg", size: 100 }))).success).toBe(false);
+  });
+
+  it("verifies stored MIME and size against the prepared upload", () => {
+    expect(storedUploadMatches({
+      expectedMimeType: "image/jpeg",
+      expectedSize: 2_000_000,
+      actualMimeType: "image/jpeg",
+      actualSize: 2_000_000,
+    })).toBe(true);
+    expect(storedUploadMatches({
+      expectedMimeType: "image/jpeg",
+      expectedSize: 2_000_000,
+      actualMimeType: "image/png",
+      actualSize: 2_000_000,
+    })).toBe(false);
+    expect(storedUploadMatches({
+      expectedMimeType: "image/jpeg",
+      expectedSize: 2_000_000,
+      actualMimeType: "image/jpeg",
+      actualSize: 2_000_001,
+    })).toBe(false);
+    expect(storedUploadMatches({
+      expectedMimeType: "image/jpeg",
+      expectedSize: 2_000_000,
+      actualMimeType: undefined,
+      actualSize: undefined,
+    })).toBe(false);
   });
 });

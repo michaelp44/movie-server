@@ -59,7 +59,7 @@ export async function listAdminInvitations(options: { search?: string; status?: 
   return (data ?? []).map((row) => ({
     id: String(row.id),
     displayName: String(row.display_name),
-    normalizedPhone: String(row.normalized_phone),
+    normalizedPhone: row.normalized_phone ? String(row.normalized_phone) : null,
     numberInvited: Number(row.number_invited),
     numberConfirmed: Number(row.number_confirmed),
     rsvpStatus: String(row.rsvp_status),

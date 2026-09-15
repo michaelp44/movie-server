@@ -59,7 +59,7 @@ export function buildSyncPlan(
   const unchanged: SyncPlan["unchanged"] = [];
 
   for (const row of source) {
-    if (sourceIds.has(row.sourceRowId) || sourcePhones.has(row.normalizedPhone)) {
+    if (sourceIds.has(row.sourceRowId) || (row.normalizedPhone && sourcePhones.has(row.normalizedPhone))) {
       conflicts.push({
         sourceRowNumber: row.sourceRowNumber,
         sourceRowId: row.sourceRowId,
@@ -68,9 +68,10 @@ export function buildSyncPlan(
       continue;
     }
     sourceIds.add(row.sourceRowId);
-    sourcePhones.add(row.normalizedPhone);
+    if (row.normalizedPhone) sourcePhones.add(row.normalizedPhone);
 
-    if (bySourceId.duplicates.has(row.sourceRowId) || byPhone.duplicates.has(row.normalizedPhone)) {
+    if (bySourceId.duplicates.has(row.sourceRowId)
+      || (row.normalizedPhone && byPhone.duplicates.has(row.normalizedPhone))) {
       conflicts.push({
         sourceRowNumber: row.sourceRowNumber,
         sourceRowId: row.sourceRowId,
@@ -79,7 +80,7 @@ export function buildSyncPlan(
       continue;
     }
     const sourceIdMatch = bySourceId.values.get(row.sourceRowId);
-    const phoneMatch = byPhone.values.get(row.normalizedPhone);
+    const phoneMatch = row.normalizedPhone ? byPhone.values.get(row.normalizedPhone) : undefined;
     if (sourceIdMatch && phoneMatch && sourceIdMatch.id !== phoneMatch.id) {
       conflicts.push({
         sourceRowNumber: row.sourceRowNumber,
@@ -108,7 +109,7 @@ export function buildSyncPlan(
         item.sourceRowId &&
         !matchedIds.has(item.id) &&
         !sourceIds.has(item.sourceRowId) &&
-        !sourcePhones.has(item.normalizedPhone),
+        (!item.normalizedPhone || !sourcePhones.has(item.normalizedPhone)),
     )
     .map((invitation) => ({ kind: "missing" as const, invitation }));
 

@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { WEDDING_MEDIA_BUCKET } from "@/lib/storage";
+import { storedUploadMatches } from "@/lib/upload/validation";
 
 export type ApprovedMedia = {
   id: string;
@@ -99,15 +100,39 @@ export async function createMediaUpload(input: {
 export async function markMediaUploadComplete(id: string, completionToken: string, invitationId: string | null) {
   const supabase = createAdminClient();
   const tokenHash = createHash("sha256").update(completionToken).digest("hex");
-  let lookup = supabase.from("photo_uploads").select("id").eq("id", id).eq("upload_token_hash", tokenHash);
+  let lookup = supabase
+    .from("photo_uploads")
+    .select("id, storage_path, mime_type, file_size")
+    .eq("id", id)
+    .eq("upload_token_hash", tokenHash);
   lookup = invitationId ? lookup.eq("invitation_id", invitationId) : lookup.is("invitation_id", null);
   const { data: record, error: lookupError } = await lookup.maybeSingle();
   if (lookupError) throw lookupError;
   if (!record) throw new Error("Upload completion token is invalid");
+
+  const storage = supabase.storage.from(WEDDING_MEDIA_BUCKET);
+  const { data: storedFile, error: infoError } = await storage.info(record.storage_path);
+  if (infoError || !storedFile) throw infoError ?? new Error("Uploaded file could not be inspected");
+  const actualSize = storedFile.size ?? storedFile.metadata?.size;
+  const actualMimeType = storedFile.contentType ?? storedFile.metadata?.mimetype;
+  if (!storedUploadMatches({
+    expectedMimeType: record.mime_type,
+    expectedSize: Number(record.file_size),
+    actualMimeType,
+    actualSize,
+  })) {
+    const { error: removeError } = await storage.remove([record.storage_path]);
+    if (removeError) throw removeError;
+    const { error: deleteError } = await supabase.from("photo_uploads").delete().eq("id", id);
+    if (deleteError) throw deleteError;
+    throw new Error("Uploaded file metadata does not match the prepared upload");
+  }
+
   const { error } = await supabase
     .from("photo_uploads")
     .update({ upload_completed: true, upload_token_hash: null })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("upload_token_hash", tokenHash);
   if (error) throw error;
 }
 

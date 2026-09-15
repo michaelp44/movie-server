@@ -4,8 +4,8 @@ export interface ExistingInvitation {
   id: string;
   sourceRowId: string | null;
   displayName: string;
-  primaryPhone: string;
-  normalizedPhone: string;
+  primaryPhone: string | null;
+  normalizedPhone: string | null;
   numberInvited: number;
   numberConfirmed: number;
   rsvpStatus: RsvpStatus;

@@ -22,6 +22,23 @@ export type UploadValidationResult =
   | { success: true; files: ValidatedUpload[] }
   | { success: false; message: string };
 
+export function storedUploadMatches(input: {
+  expectedMimeType: string;
+  expectedSize: number;
+  actualMimeType: string | null | undefined;
+  actualSize: number | null | undefined;
+}): boolean {
+  if (!input.actualMimeType || !Number.isSafeInteger(input.actualSize) || !input.actualSize) {
+    return false;
+  }
+  const media = allowedMedia[input.actualMimeType as keyof typeof allowedMedia];
+  if (!media) return false;
+  const maxBytes = media.mediaKind === "video" ? uploadLimits.maxVideoBytes : uploadLimits.maxImageBytes;
+  return input.actualMimeType === input.expectedMimeType
+    && input.actualSize === input.expectedSize
+    && input.actualSize <= maxBytes;
+}
+
 export function validateUploadBatch(files: UploadDescriptor[]): UploadValidationResult {
   if (!Array.isArray(files) || files.length === 0) {
     return { success: false, message: "בחרו לפחות קובץ אחד להעלאה" };

@@ -38,7 +38,7 @@ export type Database = {
           id: string;
           display_name: string;
           primary_phone: string | null;
-          normalized_phone: string;
+          normalized_phone: string | null;
           number_invited: number;
           number_confirmed: number;
           rsvp_status: RsvpStatus;
@@ -58,7 +58,7 @@ export type Database = {
           id?: string;
           display_name: string;
           primary_phone?: string | null;
-          normalized_phone: string;
+          normalized_phone?: string | null;
           number_invited?: number;
           number_confirmed?: number;
           rsvp_status?: RsvpStatus;
