@@ -125,7 +125,6 @@ export function PhotoUploader({
     setState({ phase: "uploading", progress: 0, message: "מכינים את ההעלאה…" });
 
     try {
-      const moderationStatuses: string[] = [];
       const optimizedFiles = await Promise.all(files.map(({ file }) => optimizeImage(file)));
       const response = await fetch("/api/uploads/prepare", {
         method: "POST",
@@ -157,25 +156,17 @@ export function PhotoUploader({
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ id: uploadInfo.id, completionToken: uploadInfo.completionToken, backend }),
         });
-        const completionPayload = await completionResponse.json() as { moderationStatus?: string };
         if (!completionResponse.ok) throw new Error("Upload completion failed");
-        if (completionPayload.moderationStatus) moderationStatuses.push(completionPayload.moderationStatus);
       }
 
       files.forEach((item) => revokePreview(item.preview));
       setFiles([]);
       setMessage("");
       if (inputRef.current) inputRef.current.value = "";
-      const allApproved = moderationStatuses.length === files.length && moderationStatuses.every((status) => status === "APPROVED");
-      const allBlocked = moderationStatuses.length === files.length && moderationStatuses.every((status) => status === "BLOCKED");
       setState({
         phase: "success",
         progress: 100,
-        message: allApproved
-          ? "אושר! התמונות יופיעו בקרוב על מסך החתונה ❤️"
-          : allBlocked
-            ? "קיבלנו את הקבצים, אך הם לא יוצגו על המסך."
-            : "קיבלנו! התוכן ממתין לבדיקה קצרה לפני שיופיע על המסך ❤️",
+        message: "קיבלנו! התמונות בדרך אלינו ויופיעו על המסך במהלך הערב ❤️",
       });
     } catch (error) {
       console.error(error);
@@ -249,7 +240,7 @@ export function PhotoUploader({
           {enabled ? state.message : "העלאת התמונות והסרטונים תיפתח בקרוב ❤️"}
         </p>
       </div>
-      <p className="mt-4 text-xs leading-5 text-stone-500">כל תוכן עובר בדיקה אוטומטית לפני שיופיע על מסך החתונה. תמונות גדולות מוקטנות במכשיר לפני ההעלאה.</p>
+      <p className="mt-4 text-xs leading-5 text-stone-500">תמונות גדולות מוקטנות במכשיר לפני ההעלאה כדי שהשיתוף יהיה מהיר ונוח.</p>
     </section>
   );
 }

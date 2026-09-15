@@ -53,7 +53,7 @@ export async function submitGuestbookMessage(
         ? "הברכה אושרה ותופיע בקרוב על מסך החתונה ❤️"
         : moderationStatus === "BLOCKED"
           ? "הברכה התקבלה אך לא תוצג על המסך."
-          : "הברכה התקבלה וממתינה לבדיקה קצרה ❤️",
+          : "הברכה התקבלה אצלנו ❤️",
     };
   } catch (error) {
     console.error("Guestbook submission failed", error);
