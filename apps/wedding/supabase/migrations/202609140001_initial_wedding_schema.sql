@@ -88,7 +88,7 @@ create table public.photo_uploads (
   storage_path text not null unique check (storage_path ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}/[0-9a-f-]{36}\.[a-z0-9]{2,5}$'),
   mime_type text not null,
   media_kind text not null check (media_kind in ('image', 'video')),
-  file_size bigint not null check (file_size > 0 and file_size <= 157286400),
+  file_size bigint not null check (file_size > 0 and file_size <= 52428800),
   upload_completed boolean not null default false,
   upload_token_hash text check (upload_token_hash is null or upload_token_hash ~ '^[a-f0-9]{64}$'),
   approved boolean not null default false,
@@ -289,7 +289,7 @@ values (
   'wedding-media',
   'wedding-media',
   false,
-  157286400,
+  52428800,
   array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime', 'video/webm']
 )
 on conflict (id) do update set

@@ -24,8 +24,17 @@ describe("AI moderation service", () => {
     expect(result.decision).toBe("review");
   });
 
-  it("never auto-approves video", async () => {
+  it("keeps a video unpublished when a server preview is unavailable", async () => {
     vi.stubEnv("OPENAI_API_KEY", "test-key");
     expect((await moderateWeddingContent({ mediaKind: "video" })).decision).toBe("review");
+  });
+
+  it("moderates a video when a server-generated preview is available", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    const result = await moderateWeddingContent(
+      { mediaKind: "video", imageUrl: "https://example.com/video-preview.jpg" },
+      responseFor({ decision: "approved", reason: "safe wedding video frame", categories: [], confidence: 0.93 }),
+    );
+    expect(result.decision).toBe("approved");
   });
 });

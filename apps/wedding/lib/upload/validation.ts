@@ -3,7 +3,7 @@ import type { ValidatedUpload } from "@/lib/types";
 export const uploadLimits = {
   maxFiles: 10,
   maxImageBytes: 25 * 1024 * 1024,
-  maxVideoBytes: 150 * 1024 * 1024,
+  maxVideoBytes: 50 * 1024 * 1024,
 } as const;
 
 const allowedMedia = {
@@ -71,7 +71,7 @@ export function validateUploadBatch(files: UploadDescriptor[]): UploadValidation
       return {
         success: false,
         message: media.mediaKind === "video"
-          ? `הסרטון ${file.name} גדול מ־150MB`
+          ? `הסרטון ${file.name} גדול מ־50MB`
           : `התמונה ${file.name} גדולה מ־25MB`,
       };
     }

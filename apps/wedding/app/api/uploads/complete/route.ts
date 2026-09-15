@@ -10,6 +10,7 @@ export const runtime = "nodejs";
 const bodySchema = z.object({
   id: z.uuid(),
   completionToken: z.string().regex(/^[A-Za-z0-9_-]{24,64}$/),
+  backend: z.enum(["supabase", "fallback"]).default("supabase"),
 });
 
 function privateJson(body: unknown, status = 200) {
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
     if (!parsed.success) return privateJson({ message: "בקשה לא תקינה" }, 400);
 
     const invitation = await getCurrentInvitation();
-    const moderationStatus = await markMediaUploadComplete(parsed.data.id, parsed.data.completionToken, invitation?.id ?? null);
+    const moderationStatus = await markMediaUploadComplete(parsed.data.id, parsed.data.completionToken, invitation?.id ?? null, parsed.data.backend);
     return privateJson({ success: true, moderationStatus });
   } catch (error) {
     console.error("Upload completion failed", error);

@@ -3,7 +3,7 @@ import { GalleryGrid } from "@/components/wedding/gallery-grid";
 import { PhotoUploader } from "@/components/wedding/photo-uploader";
 import { PageShell } from "@/components/wedding/page-shell";
 import { getApprovedGallery } from "@/lib/data/guest-interactions";
-import { isSupabaseAdminConfigured } from "@/lib/env";
+import { isGuestInteractionConfigured } from "@/lib/env";
 import { parseTableNumber } from "@/lib/table";
 import { getGalleryViewerHash } from "@/lib/gallery-likes";
 
@@ -29,7 +29,7 @@ export default async function PhotosPage({
       description="צלמתם רגע שאנחנו חייבים לראות? העלו אותו לכאן — בלי להירשם ובלי לשלוח בקבוצות."
     >
       <PhotoUploader
-        enabled={isSupabaseAdminConfigured()}
+        enabled={isGuestInteractionConfigured()}
         tableNumber={tableNumber ?? undefined}
       />
 

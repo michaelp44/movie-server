@@ -153,7 +153,13 @@ export async function findInvitationBySecureToken(token: string): Promise<Invita
 
 export async function getCurrentInvitation(): Promise<InvitationDTO | null> {
   const session = await readGuestSession();
-  return session ? findInvitationById(session.invitationId) : null;
+  if (!session) return null;
+  try {
+    return await findInvitationById(session.invitationId);
+  } catch (error) {
+    console.error("Guest identity lookup failed; continuing without personalization", error);
+    return null;
+  }
 }
 
 export async function isSeatingPublished(): Promise<boolean> {

@@ -6,6 +6,7 @@ import type { RateLimitResult } from "@/lib/types";
 
 import { hashRateLimitIdentifier } from "./hash";
 import { consumeLocalRateLimit } from "./local";
+import { fallbackRequest, isFallbackConfigured } from "@/lib/fallback/client";
 
 const ACTION_PATTERN = /^[a-z0-9][a-z0-9:_-]{0,63}$/;
 
@@ -50,21 +51,31 @@ export async function consumeRateLimit(
   const client = createAdminClient({ optional: true });
 
   if (!client) {
+    if (isFallbackConfigured()) {
+      const result = await fallbackRequest<{ allowed: boolean; remaining: number; resetAt: string }>("/v1/rate-limit", { method: "POST", body: { action, identifierHash, limit, windowSeconds } });
+      return { ...result, resetAt: new Date(result.resetAt) };
+    }
     if (process.env.NODE_ENV === "production") {
       throw new RateLimitError("Supabase rate limiting is not configured");
     }
     return consumeLocalRateLimit(action, identifierHash, limit, windowSeconds);
   }
 
-  const { data, error } = await client.rpc("consume_rate_limit", {
-    p_action: action,
-    p_identifier_hash: identifierHash,
-    p_limit: limit,
-    p_window_seconds: windowSeconds,
-  });
+  let data, error;
+  try {
+    ({ data, error } = await client.rpc("consume_rate_limit", { p_action: action, p_identifier_hash: identifierHash, p_limit: limit, p_window_seconds: windowSeconds }));
+  } catch (cause) {
+    if (!isFallbackConfigured()) throw new RateLimitError("Unable to consume rate limit", cause);
+    const result = await fallbackRequest<{ allowed: boolean; remaining: number; resetAt: string }>("/v1/rate-limit", { method: "POST", body: { action, identifierHash, limit, windowSeconds } });
+    return { ...result, resetAt: new Date(result.resetAt) };
+  }
 
   const result = data?.[0];
   if (error || !result) {
+    if (isFallbackConfigured()) {
+      const fallback = await fallbackRequest<{ allowed: boolean; remaining: number; resetAt: string }>("/v1/rate-limit", { method: "POST", body: { action, identifierHash, limit, windowSeconds } });
+      return { ...fallback, resetAt: new Date(fallback.resetAt) };
+    }
     throw new RateLimitError("Unable to consume rate limit", error);
   }
 

@@ -12,13 +12,14 @@ export async function moderateWeddingContent(
   input: ModerationInput,
   fetcher: typeof fetch = fetch,
 ): Promise<ModerationResult> {
-  if (input.mediaKind === "video") return review("Video requires manual review");
+  if (input.mediaKind === "image" && !input.imageUrl) return review("Image preview is unavailable");
+  if (input.mediaKind === "video" && !input.imageUrl) return review("Video preview is unavailable");
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return review("AI moderation is not configured");
 
   const content: Array<Record<string, string>> = [{
     type: "input_text",
-    text: `${moderationPrompt}\n\nGuest message: ${input.text?.trim() || "(none)"}`,
+    text: `${moderationPrompt}\n\n${input.mediaKind === "video" ? "The attached image is a server-generated representative frame from a short guest video. " : ""}Guest message: ${input.text?.trim() || "(none)"}`,
   }];
   if (input.imageUrl) content.push({ type: "input_image", image_url: input.imageUrl, detail: "low" });
 

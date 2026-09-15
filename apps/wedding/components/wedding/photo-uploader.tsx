@@ -40,19 +40,20 @@ function clientValidate(files: File[]) {
   if (files.length > 10) return "אפשר להעלות עד 10 קבצים בכל פעם";
   for (const file of files) {
     if (!acceptedTypes.has(file.type)) return `הקובץ ${file.name} אינו בפורמט נתמך`;
-    const limit = file.type.startsWith("video/") ? 150 * 1024 * 1024 : 25 * 1024 * 1024;
+    const limit = file.type.startsWith("video/") ? 50 * 1024 * 1024 : 25 * 1024 * 1024;
     if (file.size > limit) return file.type.startsWith("video/")
-      ? `הסרטון ${file.name} גדול מ־150MB`
+      ? `הסרטון ${file.name} גדול מ־50MB`
       : `התמונה ${file.name} גדולה מ־25MB`;
   }
   return null;
 }
 
-function uploadWithProgress(url: string, file: File, onProgress: (value: number) => void) {
+function uploadWithProgress(url: string, file: File, onProgress: (value: number) => void, backend: "supabase" | "fallback") {
   return new Promise<void>((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("PUT", url);
-    request.setRequestHeader("x-upsert", "false");
+    if (backend === "supabase") request.setRequestHeader("x-upsert", "false");
+    else request.setRequestHeader("content-type", file.type);
     request.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) onProgress(event.loaded / event.total);
     });
@@ -61,10 +62,13 @@ function uploadWithProgress(url: string, file: File, onProgress: (value: number)
       else reject(new Error(`Upload failed (${request.status})`));
     });
     request.addEventListener("error", () => reject(new Error("Network upload error")));
-    const body = new FormData();
-    body.append("cacheControl", "3600");
-    body.append("", file);
-    request.send(body);
+    if (backend === "fallback") request.send(file);
+    else {
+      const body = new FormData();
+      body.append("cacheControl", "3600");
+      body.append("", file);
+      request.send(body);
+    }
   });
 }
 
@@ -134,7 +138,7 @@ export function PhotoUploader({
       });
       const payload = await response.json() as {
         message?: string;
-        uploads?: Array<{ id: string; signedUrl: string; completionToken: string }>;
+        uploads?: Array<{ id: string; signedUrl: string; completionToken: string; backend?: "supabase" | "fallback" }>;
       };
       if (!response.ok || !payload.uploads || payload.uploads.length !== files.length) {
         throw new Error(payload.message ?? "Upload preparation failed");
@@ -143,14 +147,15 @@ export function PhotoUploader({
       for (let index = 0; index < files.length; index += 1) {
         const selected = optimizedFiles[index]!;
         const uploadInfo = payload.uploads[index]!;
+        const backend = uploadInfo.backend ?? "supabase";
         await uploadWithProgress(uploadInfo.signedUrl, selected, (value) => {
           const total = ((index + value) / files.length) * 100;
           setState({ phase: "uploading", progress: total, message: `מעלים ${index + 1} מתוך ${files.length}…` });
-        });
+        }, backend);
         const completionResponse = await fetch("/api/uploads/complete", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ id: uploadInfo.id, completionToken: uploadInfo.completionToken }),
+          body: JSON.stringify({ id: uploadInfo.id, completionToken: uploadInfo.completionToken, backend }),
         });
         const completionPayload = await completionResponse.json() as { moderationStatus?: string };
         if (!completionResponse.ok) throw new Error("Upload completion failed");
@@ -201,7 +206,7 @@ export function PhotoUploader({
       <label htmlFor="wedding-media" className={`mt-6 flex min-h-36 flex-col items-center justify-center rounded-[1.5rem] border border-dashed px-5 text-center transition focus-within:ring-2 focus-within:ring-[#a9854f] ${enabled ? "cursor-pointer border-[#a9854f]/55 bg-[#f7f2e8] hover:border-[#8e6935] hover:bg-[#f1e8d8]" : "cursor-not-allowed border-stone-300 bg-stone-100 text-stone-400"}`}>
         <ImagePlus className="mb-3 text-[#96713d]" aria-hidden="true" />
         <span className="font-semibold">בחירת תמונות או סרטונים</span>
-        <span className="mt-1 text-xs text-stone-500">עד 10 קבצים · תמונה עד 25MB · סרטון עד 150MB</span>
+        <span className="mt-1 text-xs text-stone-500">עד 10 קבצים · תמונה עד 25MB · סרטון קצר עד 50MB</span>
       </label>
 
       {files.length > 0 && (

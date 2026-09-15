@@ -188,3 +188,11 @@ export function isWeddingDemoEnabled(): boolean {
 export function isGuestIdentificationConfigured(): boolean {
   return isWeddingDemoEnabled() || isSupabaseAdminConfigured();
 }
+
+export function isWeddingFallbackConfigured(): boolean {
+  return Boolean(process.env.WEDDING_FALLBACK_URL && (process.env.WEDDING_FALLBACK_SECRET?.length ?? 0) >= 32);
+}
+
+export function isGuestInteractionConfigured(): boolean {
+  return isWeddingDemoEnabled() || isSupabaseAdminConfigured() || isWeddingFallbackConfigured();
+}

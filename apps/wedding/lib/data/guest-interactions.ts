@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { WEDDING_MEDIA_BUCKET } from "@/lib/storage";
 import { storedUploadMatches } from "@/lib/upload/validation";
 import { decisionToStatus, moderateWeddingContent } from "@/lib/moderation";
+import { fallbackRequest, isFallbackConfigured, operationId } from "@/lib/fallback/client";
 
 export type ApprovedMedia = {
   id: string;
@@ -20,7 +21,16 @@ export async function saveGuestbookMessage(input: {
   displayName: string;
   message: string;
 }) {
-  const supabase = createAdminClient();
+  const mirrorId = operationId();
+  const fallbackOnly = async () => {
+    const result = await moderateWeddingContent({ text: input.message });
+    const status = decisionToStatus(result.decision);
+    const saved = await fallbackRequest<{ moderationStatus: string }>("/v1/blessings", { method: "POST", body: { operationId: mirrorId, id: mirrorId, invitationId: input.invitationId, displayName: input.displayName, message: input.message, moderationStatus: status, moderationReason: result.reason } });
+    return saved.moderationStatus;
+  };
+  const supabase = createAdminClient({ optional: true });
+  if (!supabase) return fallbackOnly();
+  try {
   let duplicateQuery = supabase
     .from("guestbook_messages")
     .select("moderation_status")
@@ -56,7 +66,12 @@ export async function saveGuestbookMessage(input: {
     moderated_at: now,
   }).eq("id", data.id);
   if (moderationError) throw moderationError;
+  if (isFallbackConfigured()) await fallbackRequest("/v1/blessings", { method: "POST", timeoutMs: 2_000, body: { operationId: data.id, id: data.id, invitationId: input.invitationId, displayName: input.displayName, message: input.message, moderationStatus: status, moderationReason: result.reason } }).catch((error) => console.error("Fallback blessing mirror failed", error));
   return status;
+  } catch (error) {
+    if (!isFallbackConfigured()) throw error;
+    return fallbackOnly();
+  }
 }
 
 export async function saveSongRequest(input: {
@@ -65,7 +80,14 @@ export async function saveSongRequest(input: {
   song: string;
   artist: string;
 }) {
-  const supabase = createAdminClient();
+  const id = operationId();
+  const fallbackOnly = async () => {
+    const result = await fallbackRequest<{ duplicate: boolean }>("/v1/songs", { method: "POST", body: { operationId: id, id, invitationId: input.invitationId, displayName: input.displayName, song: input.song, artist: input.artist } });
+    return result.duplicate ? "duplicate" as const : "created" as const;
+  };
+  const supabase = createAdminClient({ optional: true });
+  if (!supabase) return fallbackOnly();
+  try {
   let duplicateQuery = supabase
     .from("song_requests")
     .select("id")
@@ -88,7 +110,12 @@ export async function saveSongRequest(input: {
   });
   if (error?.code === "23505") return "duplicate" as const;
   if (error) throw error;
+  if (isFallbackConfigured()) await fallbackRequest("/v1/songs", { method: "POST", timeoutMs: 2_000, body: { operationId: id, id, invitationId: input.invitationId, displayName: input.displayName, song: input.song, artist: input.artist } }).catch((mirrorError) => console.error("Fallback song mirror failed", mirrorError));
   return "created" as const;
+  } catch (error) {
+    if (!isFallbackConfigured()) throw error;
+    return fallbackOnly();
+  }
 }
 
 export async function createMediaUpload(input: {
@@ -100,7 +127,12 @@ export async function createMediaUpload(input: {
   extension: string;
   message?: string | null;
 }) {
-  const supabase = createAdminClient();
+  const supabase = createAdminClient({ optional: true });
+  if (!supabase) {
+    const result = await fallbackRequest<{ uploads: Array<{ id: string; backend: "fallback"; signedUrl: string; completionToken: string }> }>("/v1/uploads/prepare", { method: "POST", body: { files: [{ mimeType: input.mimeType, size: input.size, extension: input.extension, mediaKind: input.mimeType.startsWith("video/") ? "video" : "image" }], invitationId: input.invitationId, displayName: input.uploaderName, message: input.message } });
+    return { ...result.uploads[0]!, path: "" };
+  }
+  try {
   const day = new Date().toISOString().slice(0, 10);
   const path = `${day}/${randomUUID()}.${input.extension}`;
   const completionToken = randomBytes(24).toString("base64url");
@@ -129,15 +161,27 @@ export async function createMediaUpload(input: {
     .single();
   if (recordError) throw recordError;
 
-  return { id: record.id as string, path, token: upload.token, signedUrl: upload.signedUrl, completionToken };
+  return { id: record.id as string, path, token: upload.token, signedUrl: upload.signedUrl, completionToken, backend: "supabase" as const };
+  } catch (error) {
+    if (!isFallbackConfigured()) throw error;
+    const result = await fallbackRequest<{ uploads: Array<{ id: string; backend: "fallback"; signedUrl: string; completionToken: string }> }>("/v1/uploads/prepare", { method: "POST", body: { files: [{ mimeType: input.mimeType, size: input.size, extension: input.extension, mediaKind: input.mimeType.startsWith("video/") ? "video" : "image" }], invitationId: input.invitationId, displayName: input.uploaderName, message: input.message } });
+    return { ...result.uploads[0]!, path: "" };
+  }
 }
 
-export async function markMediaUploadComplete(id: string, completionToken: string, invitationId: string | null) {
+export async function markMediaUploadComplete(id: string, completionToken: string, invitationId: string | null, backend: "supabase" | "fallback" = "supabase") {
+  if (backend === "fallback") {
+    const record = await fallbackRequest<{ id: string; message: string | null; mediaKind: "image" | "video"; mediaUrl: string; previewImageUrl: string | null }>("/v1/uploads/complete", { method: "POST", timeoutMs: 35_000, body: { id, completionToken } });
+    const moderation = await moderateWeddingContent({ text: record.message, imageUrl: record.previewImageUrl, mediaKind: record.mediaKind });
+    const status = decisionToStatus(moderation.decision);
+    await fallbackRequest("/v1/uploads/moderate", { method: "POST", body: { operationId: id, id, status, reason: moderation.reason } });
+    return status;
+  }
   const supabase = createAdminClient();
   const tokenHash = createHash("sha256").update(completionToken).digest("hex");
   let lookup = supabase
     .from("photo_uploads")
-    .select("id, storage_path, mime_type, media_kind, file_size, message")
+    .select("id, invitation_id, uploader_name, storage_path, mime_type, media_kind, file_size, message, created_at")
     .eq("id", id)
     .eq("upload_token_hash", tokenHash);
   lookup = invitationId ? lookup.eq("invitation_id", invitationId) : lookup.is("invitation_id", null);
@@ -170,12 +214,21 @@ export async function markMediaUploadComplete(id: string, completionToken: strin
     .eq("upload_token_hash", tokenHash);
   if (error) throw error;
 
-  const { data: signed } = record.media_kind === "image"
-    ? await storage.createSignedUrl(record.storage_path, 5 * 60)
-    : { data: null };
+  const { data: signed } = await storage.createSignedUrl(record.storage_path, 5 * 60);
+  let moderationImageUrl = record.media_kind === "image" ? signed?.signedUrl ?? null : null;
+  let mirrored = false;
+  if (isFallbackConfigured() && signed?.signedUrl) {
+    try {
+      const mirror = await fallbackRequest<{ previewImageUrl: string | null }>("/v1/uploads/mirror", { method: "POST", timeoutMs: 40_000, body: { operationId: id, id, invitationId: record.invitation_id, displayName: record.uploader_name, message: record.message, mediaUrl: signed.signedUrl, mediaPath: record.storage_path, mimeType: record.mime_type, fileSize: record.file_size, mediaKind: record.media_kind, status: "PENDING", reason: null, createdAt: record.created_at } });
+      moderationImageUrl = mirror.previewImageUrl ?? moderationImageUrl;
+      mirrored = true;
+    } catch (error) {
+      console.error("Fallback media pre-mirror failed", error);
+    }
+  }
   const moderation = await moderateWeddingContent({
     text: record.message,
-    imageUrl: signed?.signedUrl ?? null,
+    imageUrl: moderationImageUrl,
     mediaKind: record.media_kind,
   });
   const status = decisionToStatus(moderation.decision);
@@ -191,13 +244,32 @@ export async function markMediaUploadComplete(id: string, completionToken: strin
     moderated_at: now,
   }).eq("id", id);
   if (moderationError) throw moderationError;
+  if (isFallbackConfigured() && mirrored) {
+    await fallbackRequest("/v1/uploads/moderate", { method: "POST", body: { operationId: id, id, status, reason: moderation.reason } }).catch((error) => console.error("Fallback media moderation mirror failed", error));
+  } else if (isFallbackConfigured() && signed?.signedUrl) {
+    try {
+      await fallbackRequest("/v1/uploads/mirror", { method: "POST", timeoutMs: 35_000, body: { operationId: id, id, invitationId: record.invitation_id, displayName: record.uploader_name, message: record.message, mediaUrl: signed.signedUrl, mediaPath: record.storage_path, mimeType: record.mime_type, fileSize: record.file_size, mediaKind: record.media_kind, status, reason: moderation.reason, createdAt: record.created_at } });
+    } catch (error) {
+      console.error("Fallback media mirror failed", error);
+    }
+  }
   return status;
 }
 
 export async function getApprovedGallery(viewerHash: string | null = null): Promise<ApprovedMedia[]> {
   const supabase = createAdminClient({ optional: true });
-  if (!supabase) return [];
+  if (!supabase) return isFallbackConfigured() ? (await fallbackRequest<{ media: ApprovedMedia[] }>("/v1/gallery", { method: "POST", body: { viewerHash } })).media : [];
 
+  const fallbackMedia = isFallbackConfigured()
+    ? fallbackRequest<{ media: ApprovedMedia[] }>("/v1/gallery", { method: "POST", timeoutMs: 2_000, body: { viewerHash } })
+        .then((result) => result.media)
+        .catch((error) => {
+          console.error("Mac gallery mirror could not be read", error);
+          return [];
+        })
+    : Promise.resolve([]);
+
+  try {
   const [{ data: settings }, { data: rows, error }] = await Promise.all([
     supabase.from("site_settings").select("value").eq("key", "gallery_published").maybeSingle(),
     supabase
@@ -210,13 +282,14 @@ export async function getApprovedGallery(viewerHash: string | null = null): Prom
       .order("created_at", { ascending: false })
       .limit(60),
   ]);
-  if (error || settings?.value !== true || !rows?.length) return [];
+  if (error) throw error;
+  if (settings?.value !== true) return [];
 
-  const { data: likes, error: likesError } = await supabase
+  const { data: likes, error: likesError } = rows?.length ? await supabase
     .from("photo_likes")
     .select("photo_id, visitor_hash")
     .in("photo_id", rows.map((row) => row.id))
-    .limit(10_000);
+    .limit(10_000) : { data: [], error: null };
   if (likesError) console.error("Gallery likes could not be loaded", likesError);
   const likeCounts = new Map<string, number>();
   const likedIds = new Set<string>();
@@ -225,12 +298,11 @@ export async function getApprovedGallery(viewerHash: string | null = null): Prom
     if (viewerHash && like.visitor_hash === viewerHash) likedIds.add(like.photo_id);
   }
 
-  const { data: signed } = await supabase.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(
-    rows.map((row) => row.storage_path),
-    60 * 60,
-  );
+  const { data: signed } = rows?.length
+    ? await supabase.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(rows.map((row) => row.storage_path), 60 * 60)
+    : { data: [] };
 
-  return rows.flatMap((row, index) => {
+  const primary = (rows ?? []).flatMap((row, index) => {
     const url = signed?.[index]?.signedUrl;
     if (!url) return [];
     return [{
@@ -243,4 +315,19 @@ export async function getApprovedGallery(viewerHash: string | null = null): Prom
       likedByViewer: likedIds.has(row.id),
     }];
   });
+  const merged = new Map(primary.map((item) => [item.id, item]));
+  for (const item of await fallbackMedia) {
+    const existing = merged.get(item.id);
+    merged.set(item.id, existing ? {
+      ...existing,
+      likeCount: Math.max(existing.likeCount, item.likeCount),
+      likedByViewer: existing.likedByViewer || item.likedByViewer,
+    } : item);
+  }
+  return [...merged.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 60);
+  } catch (error) {
+    if (!isFallbackConfigured()) throw error;
+    console.error("Supabase gallery read failed; using Mac fallback", error);
+    return await fallbackMedia;
+  }
 }

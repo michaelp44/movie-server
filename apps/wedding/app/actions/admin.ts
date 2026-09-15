@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { createAdminDataClient, requireAdmin } from "@/lib/admin";
+import { fallbackRequest, isFallbackConfigured } from "@/lib/fallback/client";
 import { normalizeSheetPhone } from "@/lib/google-sheets";
 import { synchronizeWeddingGuests } from "@/lib/sync";
 import { WEDDING_MEDIA_BUCKET } from "@/lib/storage";
@@ -127,6 +128,7 @@ export async function setSiteFlagAction(formData: FormData): Promise<void> {
     .from("site_settings")
     .upsert({ key, value: enabled, updated_at: new Date().toISOString() }, { onConflict: "key" });
   assertNoError(error);
+  if (isFallbackConfigured()) await fallbackRequest("/v1/settings", { method: "POST", body: { key, value: enabled } }).catch((mirrorError) => console.error("Fallback setting mirror failed", mirrorError));
   revalidatePath("/", "layout");
   revalidatePath("/admin/settings");
   withNotice("/admin/settings", enabled ? "הפרסום הופעל." : "הפרסום הושהה.");
@@ -147,6 +149,7 @@ export async function moderatePhotoAction(formData: FormData): Promise<void> {
     })
     .eq("id", id);
   assertNoError(error);
+  if (isFallbackConfigured()) await fallbackRequest("/v1/moderation", { method: "POST", body: { id, action: decision === "approve" ? "approve" : "block" } }).catch((mirrorError) => console.error("Fallback photo moderation mirror failed", mirrorError));
   revalidatePath("/admin/photos");
   revalidatePath("/photos");
 }
@@ -161,6 +164,7 @@ export async function deletePhotoAction(formData: FormData): Promise<void> {
   assertNoError(storageResult.error);
   const deleteResult = await db.from("photo_uploads").delete().eq("id", id);
   assertNoError(deleteResult.error);
+  if (isFallbackConfigured()) await fallbackRequest("/v1/moderation", { method: "POST", body: { id, action: "delete" } }).catch((mirrorError) => console.error("Fallback photo deletion mirror failed", mirrorError));
   revalidatePath("/admin/photos");
   revalidatePath("/photos");
 }
@@ -177,6 +181,7 @@ export async function moderateGuestbookAction(formData: FormData): Promise<void>
     moderated_by: admin.id,
   }).eq("id", id);
   assertNoError(error);
+  if (isFallbackConfigured()) await fallbackRequest("/v1/moderation", { method: "POST", body: { id, action: approved ? "approve" : "block" } }).catch((mirrorError) => console.error("Fallback blessing moderation mirror failed", mirrorError));
   revalidatePath("/admin/guestbook");
 }
 
@@ -253,6 +258,7 @@ export async function moderateLiveWallAction(formData: FormData): Promise<void> 
       : await db.from("guestbook_messages").update(values).eq("id", id);
     assertNoError(result.error);
   }
+  if (isFallbackConfigured()) await fallbackRequest("/v1/moderation", { method: "POST", body: { id, action } }).catch((mirrorError) => console.error("Fallback Live Wall moderation mirror failed", mirrorError));
   revalidatePath("/admin/live-wall");
   revalidatePath("/live");
 }
@@ -263,5 +269,6 @@ export async function setLiveWallControlAction(formData: FormData): Promise<void
   const value = formData.get("value") === "true";
   const db = createAdminDataClient();
   assertNoError((await db.from("site_settings").upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" })).error);
+  if (isFallbackConfigured()) await fallbackRequest("/v1/settings", { method: "POST", body: { key, value } }).catch((mirrorError) => console.error("Fallback Live Wall setting mirror failed", mirrorError));
   revalidatePath("/admin/live-wall");
 }

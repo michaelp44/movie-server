@@ -21,6 +21,12 @@
 - Added native mobile site sharing, a printable `/qr` page, and an independent `/live/demo` wall preview.
 - Added the venue Live Wall operating runbook and weather-range/code tests.
 - Added gallery likes with per-device deduplication, counts, unlike support, rate limiting, and private server-only persistence.
+- Added an automatic Mac mini failover for uploads, blessings, songs, reactions, likes, gallery, and Live Wall reads.
+- Added HMAC-signed fallback traffic, one-time upload URLs, expiring media URLs, local SQLite persistence, and Cloudflare Tunnel origin isolation.
+- Added dual writes and merged reads so Mac-only content survives Supabase recovery without disappearing from the wall.
+- Added a consistent local SQLite/media snapshot to the attached external drive and background LaunchAgents for the fallback service and backup attempts.
+- Reduced short-video uploads to 50MB so the same policy works through Cloudflare and Supabase Free limits.
+- Added server-generated short-video preview frames so AI can moderate local fallback videos; a missing preview fails safely to manual review.
 
 ## Complex tasks remaining
 
@@ -48,13 +54,13 @@
 - Current known state: Unit/build checks pass; database-backed controls are intentionally disabled in production.
 - Suggested next step: Run the flows with one dedicated test invitation after Supabase setup.
 
-### 4. Activate automatic external-drive backups
+### 4. Add local emergency admin authentication
 
-- What needs to be done: Run the first backup, verify the exported JSON and media files, and then install a macOS schedule.
-- Why complex/risky: The production data does not exist until Supabase is connected, and scheduling before a verified backup could create a false sense of protection.
-- Relevant files: `scripts/backup-to-external.mjs`, `.env.example`.
-- Current known state: `/Volumes/My Passport/Wedding-Shoval-Michael` exists with ample space. Backups are intentionally stored as readable files without encryption.
-- Suggested next step: After Supabase setup, run one backup, inspect a sample, then add a LaunchAgent.
+- What needs to be done: Add an emergency admin session that remains usable when Supabase Auth is unavailable.
+- Why complex/risky: It is an authentication boundary protecting guest data and destructive moderation controls; an unsafe shortcut would expose the admin dashboard.
+- Relevant files: `lib/admin/auth.ts`, `app/actions/admin-auth.ts`, `app/admin/login/page.tsx`.
+- Current known state: The user asked to defer login work. Guest content continues anonymously during an outage, but admin login still requires Supabase.
+- Suggested next step: When login work resumes, use a rate-limited Keychain-backed emergency passcode and a separate signed HttpOnly cookie.
 
 ### 5. Connect GitHub and Vercel Git deployment
 
@@ -66,6 +72,7 @@
 
 ## Remaining simple tasks
 
+- Grant `/opt/homebrew/bin/node` macOS access to removable volumes, then load the prepared five-minute external-backup LaunchAgent.
 - Replace schedule, menu, story, remaining FAQ, and photo placeholders after final content is supplied.
 - Optionally remove per-table QR cards if only the main QR will be printed.
 - After Supabase is provisioned, smoke-test safe/review/blocked moderation with disposable content. The OpenAI key is already configured in Vercel Production.
@@ -73,4 +80,4 @@
 
 ## Project status
 
-The public informational site, domain, HTTPS, QR assets, responsive UI, and safe unavailable states work in production. Dynamic guest/admin/media/sync features are implemented but remain disabled until Supabase and Google service-account credentials are connected.
+The public site, domain, HTTPS, QR assets, responsive UI, Mac fallback service, external snapshot, anonymous uploads/messages, gallery, likes, reactions, and Live Wall can work without Supabase. Guest personalization, admin authentication, Google Sheet sync, and the cloud primary still need the Supabase/Google credentials to be connected.

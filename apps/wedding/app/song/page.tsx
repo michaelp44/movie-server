@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SongRequestForm } from "@/components/wedding/song-request-form";
 import { PageShell } from "@/components/wedding/page-shell";
-import { isSupabaseAdminConfigured } from "@/lib/env";
+import { isGuestInteractionConfigured } from "@/lib/env";
 import { getCurrentInvitation } from "@/lib/guest-data";
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export default async function SongPage() {
     >
       <SongRequestForm
         defaultName={invitation?.displayName ?? ""}
-        enabled={isSupabaseAdminConfigured()}
+        enabled={isGuestInteractionConfigured()}
       />
     </PageShell>
   );

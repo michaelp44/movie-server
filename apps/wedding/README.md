@@ -23,13 +23,16 @@ Google Sheets (source of truth)
           |
           | read-only service account, explicit admin sync
           v
-Supabase PostgreSQL <---- Next.js server-only data layer
-          |                         |
-          |                         +-- signed HttpOnly guest session
-          |                         +-- Supabase Auth admin session
-          |                         +-- persistent rate limits
-          v
-Private Supabase Storage -- signed upload/read URLs -- guest browser
+Supabase PostgreSQL/Storage <---- Next.js server-only data layer
+          |                              |
+          |                              +-- signed HttpOnly guest session
+          |                              +-- Supabase Auth admin session
+          |                              +-- automatic Mac failover
+          v                              v
+Private cloud media          Mac SQLite/private media mirror
+                                      |
+                                      +-- Cloudflare Tunnel (signed requests only)
+                                      +-- external-drive snapshots
 ```
 
 The browser never receives the invitation list, service-role key, Google credentials, or raw phone lookup data. Guest lookup, synchronization, signed upload creation, and moderation use server-only code. Public and authenticated Supabase roles have no direct table grants; the service role is used only after application-level authorization.
@@ -58,7 +61,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-For a guest UI preview without Supabase, set `WEDDING_DEMO_MODE=true` and provide a local `GUEST_SESSION_SECRET` of at least 32 bytes. Use `0501234567` as the demo phone. Demo mode is hard-disabled when `NODE_ENV=production`; submissions and uploads still require Supabase.
+For a guest UI preview without Supabase, set `WEDDING_DEMO_MODE=true` and provide a local `GUEST_SESSION_SECRET` of at least 32 bytes. Use `0501234567` as the demo phone. Demo mode is hard-disabled when `NODE_ENV=production`. Submissions can use the Mac fallback when its two environment variables are configured.
 
 Generate local secrets with, for example:
 
@@ -71,6 +74,8 @@ openssl rand -base64 48
 | Variable | Visibility | Required | Purpose |
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | Public | Yes | Canonical site origin; production value is `https://wedding.my-rem.com` |
+| `WEDDING_FALLBACK_URL` | Server only | Recommended | Signed Mac fallback origin; production value is `https://wedding-origin.my-rem.com` |
+| `WEDDING_FALLBACK_SECRET` | Server only | Recommended | Shared HMAC secret for server-to-server fallback calls, minimum 32 bytes |
 | `NEXT_PUBLIC_SUPABASE_URL` | Public | Yes | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | Yes | Supabase anonymous key, used for admin Auth session exchange only |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Yes | Server data access; never prefix with `NEXT_PUBLIC_` |
@@ -91,7 +96,7 @@ openssl rand -base64 48
 
 Do not commit `.env.local`. Vercel secrets must be added in Project Settings > Environment Variables.
 
-When the production Supabase variables are absent or incomplete, the public informational pages remain available while guest identification, uploads, guestbook submissions, song requests, and admin login are visibly disabled with friendly Hebrew status messages. Server endpoints also fail closed; they do not fall back to in-memory storage in production.
+When Supabase is absent or temporarily unavailable, uploads, blessings, song requests, reactions, likes, the gallery, and the Live Wall automatically use the persistent Mac fallback. Guest/admin login remains dependent on Supabase for now and is deliberately deferred; anonymous sharing still works. The fallback is never an in-memory store and does not expose its SQLite database or media listing publicly.
 
 ## Central wedding configuration
 
@@ -141,7 +146,7 @@ Song-request uniqueness is enforced both before insertion and by database indexe
 
 ### Storage
 
-The migration creates the private `wedding-media` bucket with an allowlist for JPEG, PNG, WebP, HEIC/HEIF, MP4, QuickTime, and WebM. There are deliberately no unrestricted anonymous Storage policies.
+The migration creates the private `wedding-media` bucket with a 50MB per-file limit and an allowlist for JPEG, PNG, WebP, HEIC/HEIF, MP4, QuickTime, and WebM. There are deliberately no unrestricted anonymous Storage policies.
 
 The upload flow is:
 
@@ -160,15 +165,25 @@ The display polls a small server feed every five seconds, rotates approved photo
 
 For local presentation testing, set `WEDDING_DEMO_MODE=true`; `/live` then shows clearly separated demo content without writing production data.
 
+### Automatic Mac fallback
+
+The venue-critical guest interactions are dual-written to Supabase and the Mac whenever both are healthy. Supabase calls use a short timeout; if they fail, the same request is written to the Mac over an HMAC-signed private API. Live Wall and gallery reads merge both sources by stable submission ID, so content created during a Supabase outage remains visible after recovery instead of disappearing.
+
+The Mac service listens only on `127.0.0.1:8789`. Cloudflare Tunnel exposes only `wedding-origin.my-rem.com`; all `/v1/*` requests require a timestamped signature, uploads require a one-time token, and media URLs are signed and expiring. The service runs as the `com.shoval-michael.wedding-fallback` LaunchAgent and restarts automatically. Its active data is under `~/Library/Application Support/ShovalMichaelWedding` to avoid SQLite locking problems on removable disks.
+
+The fallback covers guest uploads, AI moderation results, blessings, songs, likes, reactions, gallery reads, wall reads, and wall publication/emergency controls. The Mac extracts a trusted representative image from short videos before AI review; if extraction or moderation fails, the video remains unpublished for review. If both Supabase and the Mac/home internet are unavailable at the same time, new dynamic actions fail safely with a Hebrew retry message; already-loaded wall content continues its current browser rotation.
+
 ## External-drive backups
 
-The production application runs on Vercel and therefore cannot write directly to a disk attached to the home Mac. After Supabase is connected, the Mac can pull a snapshot of every wedding table and every uploaded media object to `/Volumes/My Passport/Wedding-Shoval-Michael`:
+The fallback database uses the internal SSD while live, then produces a consistent SQLite snapshot and media mirror at `/Volumes/My Passport/Wedding-Shoval-Michael/fallback-backup`. This avoids running SQLite directly on a removable volume while still keeping a complete readable copy on the external drive. The first snapshot has been verified. A five-minute LaunchAgent is prepared, but macOS must grant `/opt/homebrew/bin/node` access to removable volumes before it is loaded; otherwise background copies are blocked even though an interactive backup succeeds. The backup never interrupts the live service and uses an atomic SQLite snapshot before copying.
+
+The separate Supabase export remains available after Supabase is connected:
 
 ```bash
 npm run backup:external
 ```
 
-The command requires the local Supabase variables. It creates readable JSON files for database tables and ordinary image/video files for media. The external drive itself is not encrypted, so anyone with physical access to it can read the backup. Schedule the backup only after a successful manual run against the production Supabase project.
+The command requires the local Supabase variables. It creates readable JSON files for database tables and ordinary image/video files for media. The external drive itself is intentionally not encrypted, so anyone with physical access to it can read the backup.
 
 ## Guest identification and sessions
 
