@@ -64,6 +64,18 @@ describe("Google Sheets mapping", () => {
     });
   });
 
+  it("canonicalizes table numbers and reports invalid table labels", () => {
+    const result = mapGuestSheet([
+      ["שם להזמנה", "טלפון", "שולחן"],
+      ["דניאל ונועה", "0501234567", "014"],
+      ["משפחת ישראלי", "0521234567", "VIP"],
+    ]);
+
+    expect(result.invitations[0]?.tableNumber).toBe("14");
+    expect(result.invitations[1]?.tableNumber).toBeNull();
+    expect(result.issues).toEqual([expect.objectContaining({ code: "invalid_table", rowNumber: 3 })]);
+  });
+
   it("keeps real-sheet invitations that do not have a phone yet", () => {
     const result = mapGuestSheet([
       ["שם ההזמנה / משפחה", "כמות פוטנציאלית", "טלפון"],

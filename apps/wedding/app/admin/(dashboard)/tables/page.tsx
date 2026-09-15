@@ -12,7 +12,7 @@ export default async function AdminTablesPage({ searchParams }: { searchParams: 
       <PageHeader title="סידורי הושבה" description="הכמות המחושבת מעדיפה מספר מאושרים; לפני אישור הגעה היא משתמשת במספר המוזמנים." />
       <AdminNotice>{params.notice}</AdminNotice>
       <form action={saveTableAction} className="mb-8 grid gap-4 rounded-2xl border border-black/10 bg-white p-5 sm:grid-cols-4">
-        <Field label="מספר / שם קצר" name="tableNumber" required />
+        <Field label="מספר שולחן" name="tableNumber" type="number" min={1} max={999} required />
         <Field label="שם תצוגה (לא חובה)" name="name" />
         <Field label="קיבולת" name="capacity" type="number" min={1} />
         <div className="self-end"><SubmitButton>שמירת שולחן</SubmitButton></div>

@@ -9,6 +9,7 @@ import {
   sheetFields,
 } from "./types";
 import { normalizeIsraeliPhone } from "@/lib/phone";
+import { parseTableNumber } from "@/lib/table";
 
 export const defaultHeaderAliases: HeaderAliases = {
   sourceRowId: [
@@ -133,6 +134,24 @@ function parseCount(
       message: `Row ${rowNumber}: ${field} must be an integer between 0 and 30.`,
     });
     return fallback;
+  }
+  return parsed;
+}
+
+function parseTable(
+  value: string,
+  rowNumber: number,
+  issues: MappingIssue[],
+): string | null {
+  if (!value) return null;
+  const parsed = parseTableNumber(value);
+  if (!parsed) {
+    issues.push({
+      rowNumber,
+      field: "tableNumber",
+      code: "invalid_table",
+      message: `Row ${rowNumber}: table number must be an integer between 1 and 999.`,
+    });
   }
   return parsed;
 }
@@ -319,7 +338,7 @@ export function mapGuestSheet(values: string[][], config: SheetMappingConfig = {
       numberInvited,
       numberConfirmed: Math.min(numberConfirmed, numberInvited),
       rsvpStatus,
-      tableNumber: cell(row.values, resolvedHeaders, "tableNumber") || null,
+      tableNumber: parseTable(cell(row.values, resolvedHeaders, "tableNumber"), row.rowNumber, issues),
       guestGroup: cell(row.values, resolvedHeaders, "guestGroup") || null,
       sourcePayload: row.values,
     });
@@ -403,7 +422,9 @@ export function applySeatingSheet(
   const tableBySourceId = new Map<string, string>();
   const conflictingSourceIds = new Set<string>();
   for (const row of rowsToObjects(rawHeaders, seatingValues.slice(headerIndex + 1), headerIndex + 2)) {
-    const table = cell(row.values, resolved, "tableNumber");
+    const tableValue = cell(row.values, resolved, "tableNumber");
+    if (!tableValue) continue;
+    const table = parseTable(tableValue, row.rowNumber, seatingIssues);
     if (!table) continue;
     const keys = seatingIdentityKeys(row.values, resolved);
     const matches = new Set(keys.flatMap((key) => {

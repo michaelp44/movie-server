@@ -80,7 +80,7 @@ function InvitationForm({ invitation, className = "" }: { invitation?: Awaited<R
       <SelectField label="סטטוס" name="rsvpStatus" defaultValue={invitation?.rsvpStatus ?? "pending"}>
         {statusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </SelectField>
-      <Field label="שולחן" name="tableNumber" defaultValue={invitation?.tableNumber ?? ""} />
+      <Field label="מספר שולחן" name="tableNumber" type="number" min={1} max={999} defaultValue={invitation?.tableNumber ?? ""} />
       <Field label="קבוצה / צד" name="guestGroup" defaultValue={invitation?.guestGroup ?? ""} />
       <div className="self-end"><SubmitButton>{invitation ? "שמירת שינויים" : "הוספת הזמנה"}</SubmitButton></div>
     </form>

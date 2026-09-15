@@ -10,6 +10,7 @@ import { createAdminDataClient, requireAdmin } from "@/lib/admin";
 import { normalizeSheetPhone } from "@/lib/google-sheets";
 import { synchronizeWeddingGuests } from "@/lib/sync";
 import { WEDDING_MEDIA_BUCKET } from "@/lib/storage";
+import { parseTableNumber } from "@/lib/table";
 
 function withNotice(path: string, notice: string): never {
   redirect(`${path}?notice=${encodeURIComponent(notice)}`);
@@ -49,11 +50,13 @@ export async function saveInvitationAction(formData: FormData): Promise<void> {
   if (!parsed.success) withNotice("/admin/guests", parsed.error.issues[0]?.message ?? "הפרטים אינם תקינים.");
   const normalizedPhone = parsed.data.phone ? normalizeSheetPhone(parsed.data.phone) : null;
   if (parsed.data.phone && !normalizedPhone) withNotice("/admin/guests", "מספר הטלפון אינו מספר ישראלי תקין.");
+  const tableNumber = parsed.data.tableNumber ? parseTableNumber(parsed.data.tableNumber) : null;
+  if (parsed.data.tableNumber && !tableNumber) withNotice("/admin/guests", "מספר השולחן חייב להיות בין 1 ל-999.");
 
   const db = createAdminDataClient();
-  if (parsed.data.tableNumber) {
+  if (tableNumber) {
     const tableResult = await db.from("wedding_tables").upsert(
-      { table_number: parsed.data.tableNumber },
+      { table_number: tableNumber },
       { onConflict: "table_number", ignoreDuplicates: true },
     );
     assertNoError(tableResult.error);
@@ -65,7 +68,7 @@ export async function saveInvitationAction(formData: FormData): Promise<void> {
     number_invited: parsed.data.numberInvited,
     number_confirmed: parsed.data.numberConfirmed,
     rsvp_status: parsed.data.rsvpStatus,
-    table_number: parsed.data.tableNumber || null,
+    table_number: tableNumber,
     guest_group: parsed.data.guestGroup || null,
     updated_at: new Date().toISOString(),
   };
@@ -97,10 +100,12 @@ export async function saveTableAction(formData: FormData): Promise<void> {
     capacity: formData.get("capacity"),
   });
   if (!parsed.success) withNotice("/admin/tables", "פרטי השולחן אינם תקינים.");
+  const tableNumber = parseTableNumber(parsed.data.tableNumber);
+  if (!tableNumber) withNotice("/admin/tables", "מספר השולחן חייב להיות בין 1 ל-999.");
   const db = createAdminDataClient();
   const { error } = await db.from("wedding_tables").upsert(
     {
-      table_number: parsed.data.tableNumber,
+      table_number: tableNumber,
       name: parsed.data.name || null,
       capacity: parsed.data.capacity === "" ? null : parsed.data.capacity,
       updated_at: new Date().toISOString(),

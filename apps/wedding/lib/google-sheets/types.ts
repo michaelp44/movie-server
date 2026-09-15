@@ -46,6 +46,7 @@ export interface MappingIssue {
     | "missing_identity"
     | "invalid_phone"
     | "invalid_number"
+    | "invalid_table"
     | "duplicate_identity"
     | "ambiguous_seating"
     | "unmatched_seating";

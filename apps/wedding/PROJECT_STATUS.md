@@ -25,7 +25,7 @@ Last updated: 2026-09-15 (Asia/Jerusalem)
 
 - TypeScript: passed
 - ESLint: passed
-- Vitest: 58/58 passed across 9 test files
+- Vitest: 59/59 passed across 9 test files
 - Next.js production build: passed
 - Latest production deployment: passed
 - Live homepage, security headers, QR PNG, and fail-closed upload API: verified
@@ -46,4 +46,5 @@ Last updated: 2026-09-15 (Asia/Jerusalem)
 - Invitations without a phone are synchronized and counted, but cannot identify publicly until a valid phone is added.
 - Missing source rows are flagged for review and never deleted automatically.
 - Ambiguous seating matches and contradictory table rows are reported rather than applied.
+- Table identifiers are canonical numbers from 1 through 999; display names are stored separately.
 - Uploaded media stays private until both upload completion validation and admin approval succeed.

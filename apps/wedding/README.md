@@ -182,6 +182,8 @@ The RSVP values `ממתין`, `מגיע`, and `לא מגיע` map to `pending`, 
 
 The workbook's `שולחנות` tab is currently a capacity/summary sheet; invitation assignments already live in both guest tabs, so do not configure it as a separate seating tab. Capacities may be entered in the admin table screen.
 
+Table numbers are canonical integers from 1 through 999. A table can also have a separate display name in admin. Invalid or contradictory source assignments are reported for review and never turned into broken table QR links.
+
 The sheet intentionally permits invitations to be added before a phone is known. The database and adapter preserve those rows with a nullable phone; they appear in admin totals but cannot identify on the public site until a valid phone is added.
 
 The current sheet does not expose an immutable source ID. Until one is added, the adapter falls back to a normalized invitation name within each source tab, which also keeps an invitation stable when its phone is filled in later. Duplicate names are reported as conflicts instead of being merged. For more resilient long-term sync, add a unique, never-changing `מזהה שורה` (or `source_row_id`) column to both guest tabs; the adapter already recognizes it.

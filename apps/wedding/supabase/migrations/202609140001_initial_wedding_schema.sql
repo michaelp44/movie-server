@@ -19,7 +19,7 @@ $$;
 
 create table public.wedding_tables (
   id uuid primary key default gen_random_uuid(),
-  table_number text not null unique check (char_length(trim(table_number)) between 1 and 24),
+  table_number text not null unique check (table_number ~ '^[1-9][0-9]{0,2}$'),
   name text check (name is null or char_length(name) <= 100),
   capacity integer check (capacity is null or capacity > 0),
   notes text check (notes is null or char_length(notes) <= 1000),
