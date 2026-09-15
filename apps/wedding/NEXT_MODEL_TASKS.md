@@ -13,7 +13,7 @@
 - Clarified in admin that per-table QR codes are optional.
 - Replaced the temporary homepage hero with the supplied photo of Shoval and Michael.
 - Added the Live Wedding Wall, combined guest sharing, AI moderation pipeline, admin controls, reactions, QR assets, demo rotation, and tests.
-- Prepared AES-256-GCM encrypted backups of all wedding tables and uploaded media to the attached `My Passport` drive.
+- Prepared simple readable backups of all wedding tables and uploaded media to the attached `My Passport` drive.
 
 ## Complex tasks remaining
 
@@ -43,11 +43,11 @@
 
 ### 4. Activate automatic external-drive backups
 
-- What needs to be done: Set a private `WEDDING_BACKUP_PASSPHRASE`, run the first encrypted backup, verify decryption, and then install a macOS schedule.
-- Why complex/risky: The production data does not exist until Supabase is connected, and scheduling before a verified restore could create a false sense of protection.
-- Relevant files: `scripts/backup-to-external.mjs`, `scripts/backup-crypto.mjs`, `scripts/decrypt-backup.mjs`, `.env.example`.
-- Current known state: `/Volumes/My Passport/Wedding-Shoval-Michael` exists with ample space. The APFS drive itself is not encrypted, so the backup format encrypts every payload.
-- Suggested next step: After Supabase setup, store a strong passphrase in a local secret source, run one backup, decrypt a sample, then add a LaunchAgent.
+- What needs to be done: Run the first backup, verify the exported JSON and media files, and then install a macOS schedule.
+- Why complex/risky: The production data does not exist until Supabase is connected, and scheduling before a verified backup could create a false sense of protection.
+- Relevant files: `scripts/backup-to-external.mjs`, `.env.example`.
+- Current known state: `/Volumes/My Passport/Wedding-Shoval-Michael` exists with ample space. Backups are intentionally stored as readable files without encryption.
+- Suggested next step: After Supabase setup, run one backup, inspect a sample, then add a LaunchAgent.
 
 ### 5. Connect GitHub and Vercel Git deployment
 

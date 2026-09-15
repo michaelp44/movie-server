@@ -50,4 +50,4 @@ Last updated: 2026-09-15 (Asia/Jerusalem)
 - Table identifiers are canonical numbers from 1 through 999; display names are stored separately.
 - Uploaded media stays private until upload verification and either high-confidence AI approval or explicit admin approval succeed.
 - Live Wall routes are implemented at `/share`, `/live`, and `/admin/live-wall`; production activation still requires Supabase plus the additive Live Wall migration.
-- The external drive folder `/Volumes/My Passport/Wedding-Shoval-Michael` is ready. Encrypted full-data/media backup scripts are prepared, but cannot run until Supabase credentials and a user-owned backup passphrase exist locally.
+- The external drive folder `/Volumes/My Passport/Wedding-Shoval-Michael` is ready. Simple readable full-data/media backup scripts are prepared, but cannot run until Supabase credentials exist locally.
