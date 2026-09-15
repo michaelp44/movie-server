@@ -9,6 +9,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "qr:generate": "node scripts/generate-public-qr.mjs",
+    "backup:external": "node scripts/backup-to-external.mjs",
+    "backup:decrypt": "node scripts/decrypt-backup.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

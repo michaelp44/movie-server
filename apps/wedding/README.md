@@ -87,6 +87,8 @@ openssl rand -base64 48
 | `WEDDING_DEMO_MODE` | Server only | Local only | Enables the small in-memory guest fixture outside production |
 | `OPENAI_API_KEY` | Server only | For automatic moderation | OpenAI project key; never expose it to the browser |
 | `OPENAI_MODERATION_MODEL` | Server only | Optional | Vision-capable model used by the wedding policy; defaults to `gpt-5-mini` |
+| `WEDDING_BACKUP_DRIVE` | Local only | For backups | Mounted external volume; defaults to `/Volumes/My Passport` |
+| `WEDDING_BACKUP_PASSPHRASE` | Local only | For backups | A private passphrase of at least 20 characters; never configure it in browser code |
 
 Do not commit `.env.local`. Vercel secrets must be added in Project Settings > Environment Variables.
 
@@ -157,6 +159,16 @@ The upload flow is:
 The display polls a small server feed every five seconds, rotates approved photos and blessings without repeatedly loading the full collection, retries automatically after network loss, and requests a browser screen wake lock when available. Storage remains private; the feed contains only short-lived signed URLs and never exposes phone numbers. If moderation is unavailable or uncertain, content becomes `NEEDS_REVIEW` and is never published automatically.
 
 For local presentation testing, set `WEDDING_DEMO_MODE=true`; `/live` then shows clearly separated demo content without writing production data.
+
+## Encrypted external-drive backups
+
+The production application runs on Vercel and therefore cannot write directly to a disk attached to the home Mac. After Supabase is connected, the Mac can pull an encrypted snapshot of every wedding table and every uploaded media object to `/Volumes/My Passport/Wedding-Shoval-Michael`:
+
+```bash
+npm run backup:external
+```
+
+The command requires the local Supabase variables and `WEDDING_BACKUP_PASSPHRASE`. Every JSON export and media object is encrypted independently with AES-256-GCM because the current external drive is not encrypted. A single file can be recovered with `npm run backup:decrypt -- <encrypted-file> <output-file>`. Keep the passphrase in macOS Keychain or another password manager; losing it makes backups unrecoverable. Schedule the backup only after a successful manual run against the production Supabase project.
 
 ## Guest identification and sessions
 
