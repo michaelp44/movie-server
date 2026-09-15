@@ -11,6 +11,9 @@ export default async function AdminQrPage({ searchParams }: { searchParams: Prom
     <>
       <PageHeader title="קודי QR" description="יצירה להורדה ולהדפסה. קישורים אישיים כוללים טוקן אקראי בלבד — לעולם לא שם או מספר טלפון." />
       <AdminNotice>{params.notice}</AdminNotice>
+      <p className="mb-5 rounded-2xl border border-black/10 bg-white p-4 text-sm leading-6 text-black/60">
+        ה-QR הראשי מספיק לכל האורחים. קוד נפרד לכל שולחן הוא אפשרות בלבד, למקרה שתרצו להציב כרטיס קטן שמוביל ישירות להעלאת תמונות עם שיוך אוטומטי לשולחן.
+      </p>
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         <QrCard title="האתר הראשי" src="/api/admin/qr?kind=main" filename="wedding-main.png" />
         <QrCard title="העלאת תמונות" src="/api/admin/qr?kind=photos" filename="wedding-photos.png" />
