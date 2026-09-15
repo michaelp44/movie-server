@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, CheckCircle2, Film, ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/form-controls";
 
 const acceptedTypes = new Set([
   "image/jpeg",
@@ -17,6 +18,23 @@ const acceptedTypes = new Set([
 
 type SelectedFile = { file: File; preview: string };
 type UploadState = { phase: "ready" | "uploading" | "success" | "error"; progress: number; message: string };
+
+async function optimizeImage(file: File): Promise<File> {
+  if (!file.type.match(/^image\/(jpeg|png|webp)$/) || file.size < 1_500_000) return file;
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const context = canvas.getContext("2d");
+  if (!context) return file;
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
+  return blob && blob.size < file.size
+    ? new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg", lastModified: file.lastModified })
+    : file;
+}
 
 function clientValidate(files: File[]) {
   if (files.length > 10) return "אפשר להעלות עד 10 קבצים בכל פעם";
@@ -59,6 +77,7 @@ export function PhotoUploader({
 }) {
   const [files, setFiles] = useState<SelectedFile[]>([]);
   const [state, setState] = useState<UploadState>({ phase: "ready", progress: 0, message: "" });
+  const [message, setMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const previewUrlsRef = useRef<Set<string>>(new Set());
 
@@ -102,12 +121,15 @@ export function PhotoUploader({
     setState({ phase: "uploading", progress: 0, message: "מכינים את ההעלאה…" });
 
     try {
+      const moderationStatuses: string[] = [];
+      const optimizedFiles = await Promise.all(files.map(({ file }) => optimizeImage(file)));
       const response = await fetch("/api/uploads/prepare", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          files: files.map(({ file }) => ({ name: file.name, type: file.type, size: file.size })),
+          files: optimizedFiles.map((file) => ({ name: file.name, type: file.type, size: file.size })),
           tableNumber,
+          message,
         }),
       });
       const payload = await response.json() as {
@@ -119,9 +141,9 @@ export function PhotoUploader({
       }
 
       for (let index = 0; index < files.length; index += 1) {
-        const selected = files[index]!;
+        const selected = optimizedFiles[index]!;
         const uploadInfo = payload.uploads[index]!;
-        await uploadWithProgress(uploadInfo.signedUrl, selected.file, (value) => {
+        await uploadWithProgress(uploadInfo.signedUrl, selected, (value) => {
           const total = ((index + value) / files.length) * 100;
           setState({ phase: "uploading", progress: total, message: `מעלים ${index + 1} מתוך ${files.length}…` });
         });
@@ -130,13 +152,26 @@ export function PhotoUploader({
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ id: uploadInfo.id, completionToken: uploadInfo.completionToken }),
         });
+        const completionPayload = await completionResponse.json() as { moderationStatus?: string };
         if (!completionResponse.ok) throw new Error("Upload completion failed");
+        if (completionPayload.moderationStatus) moderationStatuses.push(completionPayload.moderationStatus);
       }
 
       files.forEach((item) => revokePreview(item.preview));
       setFiles([]);
+      setMessage("");
       if (inputRef.current) inputRef.current.value = "";
-      setState({ phase: "success", progress: 100, message: "קיבלנו! התמונות והסרטונים מחכים לנו בגלריה הפרטית ❤️" });
+      const allApproved = moderationStatuses.length === files.length && moderationStatuses.every((status) => status === "APPROVED");
+      const allBlocked = moderationStatuses.length === files.length && moderationStatuses.every((status) => status === "BLOCKED");
+      setState({
+        phase: "success",
+        progress: 100,
+        message: allApproved
+          ? "אושר! התמונות יופיעו בקרוב על מסך החתונה ❤️"
+          : allBlocked
+            ? "קיבלנו את הקבצים, אך הם לא יוצגו על המסך."
+            : "קיבלנו! התוכן ממתין לבדיקה קצרה לפני שיופיע על המסך ❤️",
+      });
     } catch (error) {
       console.error(error);
       setState({ phase: "error", progress: 0, message: "לא הצלחנו להשלים את ההעלאה. בדקו את החיבור ונסו שוב ❤️" });
@@ -187,6 +222,11 @@ export function PhotoUploader({
         </div>
       )}
 
+      <div className="mt-5">
+        <label htmlFor="media-message" className="mb-2 block text-sm font-semibold">רוצים לצרף ברכה? <span className="font-normal text-stone-500">לא חובה</span></label>
+        <Textarea id="media-message" value={message} onChange={(event) => setMessage(event.target.value)} maxLength={600} rows={3} placeholder="כמה מילים שיופיעו לצד התמונה…" disabled={!enabled || state.phase === "uploading"} />
+      </div>
+
       {state.phase === "uploading" && (
         <div className="mt-5" aria-live="polite">
           <div className="h-1.5 overflow-hidden rounded-full bg-stone-200"><div className="h-full rounded-full bg-[#a9854f] transition-[width]" style={{ width: `${state.progress}%` }} /></div>
@@ -204,7 +244,7 @@ export function PhotoUploader({
           {enabled ? state.message : "העלאת התמונות והסרטונים תיפתח בקרוב ❤️"}
         </p>
       </div>
-      <p className="mt-4 text-xs leading-5 text-stone-500">התוכן לא מתפרסם אוטומטית. רק אנחנו יכולים לאשר אותו לגלריה.</p>
+      <p className="mt-4 text-xs leading-5 text-stone-500">כל תוכן עובר בדיקה אוטומטית לפני שיופיע על מסך החתונה. תמונות גדולות מוקטנות במכשיר לפני ההעלאה.</p>
     </section>
   );
 }

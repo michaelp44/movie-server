@@ -46,3 +46,16 @@ export interface AdminPhoto {
   createdAt: string;
   previewUrl: string | null;
 }
+
+export interface AdminLiveWallItem {
+  id: string;
+  kind: "photo" | "blessing";
+  displayName: string | null;
+  message: string | null;
+  previewUrl: string | null;
+  status: "PENDING" | "APPROVED" | "NEEDS_REVIEW" | "BLOCKED";
+  reason: string | null;
+  confidence: number | null;
+  hiddenAt: string | null;
+  createdAt: string;
+}

@@ -16,6 +16,7 @@ const bodySchema = z.object({
     size: z.number().int().positive(),
   })).min(1).max(10),
   tableNumber: z.string().max(3).optional(),
+  message: z.string().trim().max(600).optional(),
 });
 
 function privateJson(body: unknown, status = 200) {
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
       mimeType: file.mimeType,
       size: file.size,
       extension: file.extension,
+      message: parsed.data.message || null,
     })));
 
     return privateJson({ uploads });

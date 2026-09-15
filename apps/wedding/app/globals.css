@@ -69,6 +69,20 @@ a {
   }
 }
 
+@keyframes wall-reveal {
+  from { opacity: 0; transform: scale(.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes float-reaction {
+  0% { opacity: 0; transform: translateY(2rem) scale(.75) rotate(-4deg); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-60vh) scale(1.15) rotate(8deg); }
+}
+
+.animate-wall-reveal { animation: wall-reveal 1.2s cubic-bezier(.22,1,.36,1) both; }
+.animate-float-reaction { animation: float-reaction 3.2s ease-out both; }
+
 .animate-soft-rise {
   animation: soft-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

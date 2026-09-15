@@ -218,3 +218,50 @@ export async function rotateInvitationTokenAction(formData: FormData): Promise<v
   revalidatePath("/admin/qr");
   withNotice("/admin/qr", "הקישור האישי הוחלף. הקישור הישן אינו פעיל עוד.");
 }
+
+export async function moderateLiveWallAction(formData: FormData): Promise<void> {
+  const admin = await requireAdmin();
+  const id = z.string().uuid().parse(formData.get("id"));
+  const kind = z.enum(["photo", "blessing"]).parse(formData.get("kind"));
+  const action = z.enum(["approve", "block", "hide", "restore", "delete"]).parse(formData.get("moderationAction"));
+  const db = createAdminDataClient();
+
+  if (action === "delete") {
+    if (kind === "photo") {
+      const { data, error } = await db.from("photo_uploads").select("storage_path").eq("id", id).single();
+      assertNoError(error);
+      if (data?.storage_path) assertNoError((await db.storage.from(WEDDING_MEDIA_BUCKET).remove([data.storage_path])).error);
+      assertNoError((await db.from("photo_uploads").delete().eq("id", id)).error);
+    } else {
+      assertNoError((await db.from("guestbook_messages").delete().eq("id", id)).error);
+    }
+  } else {
+    const now = new Date().toISOString();
+    const values = action === "hide" ? { hidden_at: now }
+      : action === "restore" ? { hidden_at: null }
+      : {
+          moderation_status: action === "approve" ? "APPROVED" as const : "BLOCKED" as const,
+          approved: action === "approve",
+          rejected: action === "block",
+          approved_at: action === "approve" ? now : null,
+          moderated_at: now,
+          moderated_by: admin.id,
+          hidden_at: action === "approve" ? null : undefined,
+        };
+    const result = kind === "photo"
+      ? await db.from("photo_uploads").update(values).eq("id", id)
+      : await db.from("guestbook_messages").update(values).eq("id", id);
+    assertNoError(result.error);
+  }
+  revalidatePath("/admin/live-wall");
+  revalidatePath("/live");
+}
+
+export async function setLiveWallControlAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const key = z.enum(["live_wall_enabled", "live_wall_paused", "live_wall_blank"]).parse(formData.get("key"));
+  const value = formData.get("value") === "true";
+  const db = createAdminDataClient();
+  assertNoError((await db.from("site_settings").upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" })).error);
+  revalidatePath("/admin/live-wall");
+}

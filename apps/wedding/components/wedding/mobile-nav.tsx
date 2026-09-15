@@ -19,7 +19,7 @@ const primaryItems = [
   { href: "/", label: "בית", icon: Home },
   { href: "/table", label: "שולחן", icon: UtensilsCrossed },
   { href: "/menu", label: "תפריט", icon: MenuIcon },
-  { href: "/photos", label: "תמונות", icon: Images },
+  { href: "/share", label: "שיתוף", icon: Images },
 ] as const;
 
 const moreItems = [

@@ -85,6 +85,8 @@ openssl rand -base64 48
 | `ADMIN_EMAILS` | Server only | Recommended | Comma-separated Supabase Auth email allowlist |
 | `NEXT_PUBLIC_BIT_URL` | Public | Optional | Bit payment URL shown in the gift section |
 | `WEDDING_DEMO_MODE` | Server only | Local only | Enables the small in-memory guest fixture outside production |
+| `OPENAI_API_KEY` | Server only | For automatic moderation | OpenAI project key; never expose it to the browser |
+| `OPENAI_MODERATION_MODEL` | Server only | Optional | Vision-capable model used by the wedding policy; defaults to `gpt-5-mini` |
 
 Do not commit `.env.local`. Vercel secrets must be added in Project Settings > Environment Variables.
 
@@ -108,7 +110,7 @@ The runtime-only publication flags `seating_published` and `gallery_published` l
 
 1. Create a dedicated Supabase project for the wedding site.
 2. Add the project URL, anonymous key, and service-role key to `.env.local` and Vercel.
-3. Apply `supabase/migrations/202609140001_initial_wedding_schema.sql` using the Supabase CLI or SQL editor.
+3. Apply both SQL files in `supabase/migrations/` in filename order using the Supabase CLI or SQL editor.
 4. Do not run the demo seed in production. For a disposable local/staging project only, apply `supabase/seed.sql`.
 5. Confirm that the `wedding-media` bucket exists and is private.
 
@@ -129,6 +131,7 @@ The migration creates:
 - `site_settings`: seating and gallery publication flags
 - `sync_runs` and `sync_run_items`: preview/apply audit history and row-level outcomes
 - `rate_limits`: fixed-window rate-limit counters
+- `live_wall_reactions`: short-lived, rate-limited emoji reactions for the venue screen
 
 All application tables have Row Level Security enabled. No anonymous or normal authenticated role can query invitation/guest data directly. The migration also revokes direct table privileges and grants server access to `service_role` only. Admin authorization is checked with Supabase Auth before the server uses the service role.
 
@@ -143,7 +146,17 @@ The upload flow is:
 1. The browser sends file name, MIME type, and size metadata to `/api/uploads/prepare`.
 2. The server validates the batch, generates a UUID filename with a trusted extension, records pending metadata, and returns a short-lived signed upload URL.
 3. The browser uploads directly to Storage and calls `/api/uploads/complete` with a one-time completion token.
-4. The item remains private and unpublished until an admin approves it.
+4. The server verifies the stored object and runs image/text moderation. Safe content is approved, uncertain content waits for review, and blocked content stays private.
+
+## Live Wedding Wall
+
+- Guest sharing: `/share`
+- Fullscreen venue display: `/live`
+- Mobile admin moderation and emergency controls: `/admin/live-wall`
+
+The display polls a small server feed every five seconds, rotates approved photos and blessings without repeatedly loading the full collection, retries automatically after network loss, and requests a browser screen wake lock when available. Storage remains private; the feed contains only short-lived signed URLs and never exposes phone numbers. If moderation is unavailable or uncertain, content becomes `NEEDS_REVIEW` and is never published automatically.
+
+For local presentation testing, set `WEDDING_DEMO_MODE=true`; `/live` then shows clearly separated demo content without writing production data.
 
 ## Guest identification and sessions
 
@@ -226,6 +239,7 @@ To moderate media, open Admin > Photos. Preview links expire automatically. Appr
 Admin > QR generates downloadable PNG codes for:
 
 - the main site
+- the Live Wall sharing page at `/share` (`public/qr/live-wall-share.png`)
 - `/photos`
 - each configured table at `/table/<number>`
 - each invitation at `/g/<random-secure-token>`

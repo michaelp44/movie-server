@@ -47,4 +47,5 @@ Last updated: 2026-09-15 (Asia/Jerusalem)
 - Missing source rows are flagged for review and never deleted automatically.
 - Ambiguous seating matches and contradictory table rows are reported rather than applied.
 - Table identifiers are canonical numbers from 1 through 999; display names are stored separately.
-- Uploaded media stays private until both upload completion validation and admin approval succeed.
+- Uploaded media stays private until upload verification and either high-confidence AI approval or explicit admin approval succeed.
+- Live Wall routes are implemented at `/share`, `/live`, and `/admin/live-wall`; production activation still requires Supabase plus the additive Live Wall migration and an OpenAI API key.

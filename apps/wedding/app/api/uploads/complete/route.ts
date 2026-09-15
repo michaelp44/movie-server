@@ -35,8 +35,8 @@ export async function POST(request: Request) {
     if (!parsed.success) return privateJson({ message: "בקשה לא תקינה" }, 400);
 
     const invitation = await getCurrentInvitation();
-    await markMediaUploadComplete(parsed.data.id, parsed.data.completionToken, invitation?.id ?? null);
-    return privateJson({ success: true });
+    const moderationStatus = await markMediaUploadComplete(parsed.data.id, parsed.data.completionToken, invitation?.id ?? null);
+    return privateJson({ success: true, moderationStatus });
   } catch (error) {
     console.error("Upload completion failed", error);
     return privateJson({ message: "לא הצלחנו להשלים את ההעלאה" }, 400);

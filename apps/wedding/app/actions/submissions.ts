@@ -46,8 +46,15 @@ export async function submitGuestbookMessage(
     }
 
     const invitation = await getCurrentInvitation();
-    await saveGuestbookMessage({ invitationId: invitation?.id ?? null, ...parsed.data });
-    return { status: "success", message: "הברכה שלכם נשמרה. עשיתם לנו את הלב ❤️" };
+    const moderationStatus = await saveGuestbookMessage({ invitationId: invitation?.id ?? null, ...parsed.data });
+    return {
+      status: "success",
+      message: moderationStatus === "APPROVED"
+        ? "הברכה אושרה ותופיע בקרוב על מסך החתונה ❤️"
+        : moderationStatus === "BLOCKED"
+          ? "הברכה התקבלה אך לא תוצג על המסך."
+          : "הברכה התקבלה וממתינה לבדיקה קצרה ❤️",
+    };
   } catch (error) {
     console.error("Guestbook submission failed", error);
     return { status: "error", message: "לא הצלחנו לשמור כרגע. נסו שוב בעוד רגע ❤️" };

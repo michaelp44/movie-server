@@ -2,7 +2,7 @@ import "server-only";
 
 import { requireAdmin } from "./auth";
 import { createAdminDataClient } from "./service-client";
-import type { AdminInvitation, AdminOverview, AdminPhoto, AdminTable } from "./types";
+import type { AdminInvitation, AdminLiveWallItem, AdminOverview, AdminPhoto, AdminTable } from "./types";
 import { WEDDING_MEDIA_BUCKET } from "@/lib/storage";
 import type { RsvpStatus } from "@/lib/types";
 
@@ -134,6 +134,23 @@ export async function listAdminPhotos(): Promise<AdminPhoto[]> {
     createdAt: String(row.created_at),
     previewUrl: signed?.[index]?.signedUrl ?? null,
   }));
+}
+
+export async function listLiveWallItems(): Promise<AdminLiveWallItem[]> {
+  await requireAdmin();
+  const db = createAdminDataClient();
+  const [photoResult, blessingResult] = await Promise.all([
+    db.from("photo_uploads").select("id, uploader_name, storage_path, message, moderation_status, moderation_reason, moderation_confidence, hidden_at, created_at").eq("upload_completed", true).order("created_at", { ascending: false }).limit(150),
+    db.from("guestbook_messages").select("id, display_name, message, moderation_status, moderation_reason, moderation_confidence, hidden_at, created_at").order("created_at", { ascending: false }).limit(150),
+  ]);
+  throwOnError(photoResult.error);
+  throwOnError(blessingResult.error);
+  const photos = photoResult.data ?? [];
+  const { data: signed } = photos.length ? await db.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(photos.map((row) => row.storage_path), 3600) : { data: [] };
+  return [
+    ...photos.map((row, index): AdminLiveWallItem => ({ id: row.id, kind: "photo", displayName: row.uploader_name, message: row.message, previewUrl: signed?.[index]?.signedUrl ?? null, status: row.moderation_status, reason: row.moderation_reason, confidence: row.moderation_confidence, hiddenAt: row.hidden_at, createdAt: row.created_at })),
+    ...(blessingResult.data ?? []).map((row): AdminLiveWallItem => ({ id: row.id, kind: "blessing", displayName: row.display_name, message: row.message, previewUrl: null, status: row.moderation_status, reason: row.moderation_reason, confidence: row.moderation_confidence, hiddenAt: row.hidden_at, createdAt: row.created_at })),
+  ].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function listGuestbookMessages() {

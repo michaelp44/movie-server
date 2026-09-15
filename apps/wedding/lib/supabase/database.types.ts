@@ -133,6 +133,13 @@ export type Database = {
           rejected: boolean;
           moderated_at: string | null;
           moderated_by: string | null;
+          message: string | null;
+          moderation_status: "PENDING" | "APPROVED" | "NEEDS_REVIEW" | "BLOCKED";
+          moderation_reason: string | null;
+          moderation_categories: Json;
+          moderation_confidence: number | null;
+          approved_at: string | null;
+          hidden_at: string | null;
         };
         Insert: TimestampInsert & {
           id?: string;
@@ -149,6 +156,13 @@ export type Database = {
           rejected?: boolean;
           moderated_at?: string | null;
           moderated_by?: string | null;
+          message?: string | null;
+          moderation_status?: "PENDING" | "APPROVED" | "NEEDS_REVIEW" | "BLOCKED";
+          moderation_reason?: string | null;
+          moderation_categories?: Json;
+          moderation_confidence?: number | null;
+          approved_at?: string | null;
+          hidden_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["photo_uploads"]["Insert"]>;
         Relationships: [
@@ -171,6 +185,12 @@ export type Database = {
           rejected: boolean;
           moderated_at: string | null;
           moderated_by: string | null;
+          moderation_status: "PENDING" | "APPROVED" | "NEEDS_REVIEW" | "BLOCKED";
+          moderation_reason: string | null;
+          moderation_categories: Json;
+          moderation_confidence: number | null;
+          approved_at: string | null;
+          hidden_at: string | null;
         };
         Insert: TimestampInsert & {
           id?: string;
@@ -181,6 +201,12 @@ export type Database = {
           rejected?: boolean;
           moderated_at?: string | null;
           moderated_by?: string | null;
+          moderation_status?: "PENDING" | "APPROVED" | "NEEDS_REVIEW" | "BLOCKED";
+          moderation_reason?: string | null;
+          moderation_categories?: Json;
+          moderation_confidence?: number | null;
+          approved_at?: string | null;
+          hidden_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["guestbook_messages"]["Insert"]>;
         Relationships: [
@@ -231,6 +257,24 @@ export type Database = {
           description?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["site_settings"]["Insert"]>;
+        Relationships: [];
+      };
+      live_wall_reactions: {
+        Row: {
+          id: string;
+          invitation_id: string | null;
+          session_hash: string;
+          emoji: "❤️" | "🔥" | "😂" | "🥂";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          invitation_id?: string | null;
+          session_hash: string;
+          emoji: "❤️" | "🔥" | "😂" | "🥂";
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["live_wall_reactions"]["Insert"]>;
         Relationships: [];
       };
       sync_runs: {

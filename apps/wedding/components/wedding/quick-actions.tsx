@@ -13,7 +13,7 @@ const actions: ReadonlyArray<{
   { href: "/table", label: "השולחן שלי", note: "סידורי הושבה", icon: Table2 },
   { href: "/schedule", label: "לו״ז הערב", note: "כל הרגעים", icon: CalendarClock },
   { href: "/menu", label: "התפריט", note: "מה אוכלים?", icon: ChefHat },
-  { href: "/photos", label: "העלאת תמונות", note: "מהטלפון שלכם", icon: Camera, accent: true },
+  { href: "/share", label: "שיתוף למסך", note: "תמונה או ברכה", icon: Camera, accent: true },
   { href: "/gift", label: "מתנה לזוג", note: "באהבה ובטעם", icon: Gift },
   { href: "/guestbook", label: "השאירו ברכה", note: "מילים שנשמור", icon: NotebookPen },
   { href: "/song", label: "בקשת שיר", note: "לרחבת הריקודים", icon: Music2 },

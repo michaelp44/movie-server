@@ -12,12 +12,13 @@
 - Added Storage metadata verification and `private, no-store` headers for sensitive APIs.
 - Clarified in admin that per-table QR codes are optional.
 - Replaced the temporary homepage hero with the supplied photo of Shoval and Michael.
+- Added the Live Wedding Wall, combined guest sharing, AI moderation pipeline, admin controls, reactions, QR assets, demo rotation, and tests.
 
 ## Complex tasks remaining
 
 ### 1. Provision and connect Supabase
 
-- What needs to be done: Create a dedicated project, apply `supabase/migrations/202609140001_initial_wedding_schema.sql`, configure Vercel keys, and create the first admin user.
+- What needs to be done: Create a dedicated project, apply both SQL migrations in filename order, configure Vercel keys, and create the first admin user.
 - Why complex/risky: Requires authenticated account access, secret handling, database migration, and production authorization checks.
 - Relevant files: `supabase/migrations/`, `lib/supabase/`, `lib/admin/auth.ts`, `.env.example`.
 - Current known state: The Supabase login page is open, but no account session or project credentials are available. Production controls fail closed.
@@ -51,6 +52,7 @@
 
 - Replace venue, maps, parking, Bit, schedule, menu, story, FAQ, and photo placeholders after final content is supplied.
 - Optionally remove per-table QR cards if only the main QR will be printed.
+- Add `OPENAI_API_KEY` to Vercel after Supabase is provisioned, then smoke-test safe/review/blocked moderation with disposable content.
 
 ## Project status
 
