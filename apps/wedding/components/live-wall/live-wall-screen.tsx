@@ -6,7 +6,7 @@ import { buildWallQueue, type WallItem } from "@/lib/live-wall/queue";
 
 const ROTATION_MS = 10_000;
 
-export function LiveWallScreen({ initial }: { initial: LiveWallPayload }) {
+export function LiveWallScreen({ initial, demo = false }: { initial: LiveWallPayload; demo?: boolean }) {
   const [payload, setPayload] = useState(initial);
   const [current, setCurrent] = useState<WallItem | null>(initial.items[0] ?? null);
   const [history, setHistory] = useState<string[]>(initial.items[0] ? [initial.items[0].id] : []);
@@ -36,6 +36,7 @@ export function LiveWallScreen({ initial }: { initial: LiveWallPayload }) {
   }, [advance]);
 
   useEffect(() => {
+    if (demo) return;
     let active = true;
     const poll = async () => {
       try {
@@ -61,7 +62,7 @@ export function LiveWallScreen({ initial }: { initial: LiveWallPayload }) {
     window.addEventListener("online", reconnect);
     void poll();
     return () => { active = false; window.clearInterval(interval); window.removeEventListener("online", reconnect); };
-  }, []);
+  }, [demo]);
 
   useEffect(() => {
     const interval = window.setInterval(() => advanceRef.current(), ROTATION_MS);
@@ -88,7 +89,7 @@ export function LiveWallScreen({ initial }: { initial: LiveWallPayload }) {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_75%_20%,rgba(177,137,77,.18),transparent_36%),radial-gradient(circle_at_15%_80%,rgba(255,255,255,.08),transparent_34%)]" />
       <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between p-[clamp(1.5rem,3vw,3.5rem)]">
         <div dir="ltr"><p className="font-serif text-[clamp(1.6rem,3vw,3.5rem)] tracking-wide">Shoval &amp; Michael</p><p className="text-[clamp(.65rem,1vw,1rem)] tracking-[.35em] text-white/50">10.12.2026</p></div>
-        {!online ? <span className="rounded-full bg-white/10 px-4 py-2 text-sm text-white/55">מתחברים מחדש…</span> : null}
+        {demo ? <span className="rounded-full bg-[#d7bd91]/15 px-4 py-2 text-sm text-[#d7bd91]">מצב הדגמה</span> : !online ? <span className="rounded-full bg-white/10 px-4 py-2 text-sm text-white/55">מתחברים מחדש…</span> : null}
       </header>
 
       <section key={showStats ? "stats" : current?.id ?? "empty"} className="animate-wall-reveal relative z-10 grid h-full place-items-center px-[clamp(2rem,7vw,8rem)] py-[clamp(7rem,10vw,10rem)] text-center">

@@ -175,11 +175,11 @@ export const weddingConfig: WeddingConfig = {
     uid: "shoval-michael-2026@wedding.my-rem.com",
   },
   weather: {
-    enabled: false,
+    enabled: true,
     locationLabel: "נתניה, קו החוף",
     prominentDaysBefore: 7,
-    provider: null,
-    isPlaceholder: true,
+    provider: "open-meteo",
+    isPlaceholder: false,
   },
   timeline: {
     isPlaceholder: true,

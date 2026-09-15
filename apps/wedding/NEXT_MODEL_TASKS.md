@@ -16,6 +16,10 @@
 - Prepared simple readable backups of all wedding tables and uploaded media to the attached `My Passport` drive.
 - Replaced venue placeholders with verified 5.91 details, working Waze/Google Maps routes, parking guidance, calendar location, and a Bit phone-copy flow.
 - Connected the official Bit collection link for direct guest payments.
+- Replaced the social/WhatsApp preview with a premium card based on the couple's supplied photo.
+- Added automatic Open-Meteo forecast retrieval for Netanya during the seven days before the wedding.
+- Added native mobile site sharing, a printable `/qr` page, and an independent `/live/demo` wall preview.
+- Added the venue Live Wall operating runbook and weather-range/code tests.
 
 ## Complex tasks remaining
 
@@ -64,6 +68,7 @@
 - Replace schedule, menu, story, remaining FAQ, and photo placeholders after final content is supplied.
 - Optionally remove per-table QR cards if only the main QR will be printed.
 - After Supabase is provisioned, smoke-test safe/review/blocked moderation with disposable content. The OpenAI key is already configured in Vercel Production.
+- Print-test `/qr` on the exact paper/printer that will be used at the venue.
 
 ## Project status
 

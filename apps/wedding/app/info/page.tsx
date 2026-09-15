@@ -6,14 +6,17 @@ import { PageShell } from "@/components/wedding/page-shell";
 import { SectionHeading } from "@/components/wedding/section-heading";
 import { WeatherCard } from "@/components/wedding/weather-card";
 import { getGoogleCalendarUrl, weddingConfig } from "@/lib/wedding-config";
+import { getWeddingForecast } from "@/lib/weather/open-meteo";
+import { ShareSiteButton } from "@/components/wedding/share-site-button";
 
 export const metadata: Metadata = {
   title: "מידע שימושי | שובל ומיכאל",
   description: "ניווט, חניה, מזג אוויר, שאלות נפוצות והוספה ליומן לקראת החתונה של שובל ומיכאל.",
 };
 
-export default function InfoPage() {
+export default async function InfoPage() {
   const googleCalendarUrl = getGoogleCalendarUrl();
+  const forecast = await getWeddingForecast();
 
   return (
     <PageShell
@@ -38,6 +41,7 @@ export default function InfoPage() {
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+                <ShareSiteButton />
                 <a
                   href={weddingConfig.calendar.icsPath}
                   download
@@ -60,7 +64,7 @@ export default function InfoPage() {
           </div>
         </section>
 
-        <WeatherCard />
+        <WeatherCard forecast={forecast} />
 
         <section aria-labelledby="faq-heading">
           <SectionHeading

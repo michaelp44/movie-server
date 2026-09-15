@@ -100,3 +100,12 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  .qr-print { min-height: auto; padding: 0; background: white; }
+  .qr-print header p:first-child { font-size: 3rem; }
+  .qr-print > div { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+  .qr-card { break-inside: avoid; padding: 1rem; box-shadow: none; }
+  .qr-card img { max-width: 230px; }
+}

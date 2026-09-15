@@ -12,17 +12,22 @@ export type LiveWallPayload = {
   generatedAt: string;
 };
 
+export function getLiveWallDemoPayload(): LiveWallPayload {
+  return {
+    items: [
+      { id: "demo-photo", kind: "photo_blessing", displayName: "דנה ותום", message: "שתמיד תרקדו יחד כמו הערב ❤️", mediaUrl: "/images/hero-editorial.jpg", createdAt: new Date().toISOString() },
+      { id: "demo-blessing", kind: "blessing", displayName: "משפחת כהן", message: "מאחלים לכם חיים מלאים באהבה, צחוק והרפתקאות", mediaUrl: null, createdAt: new Date(Date.now() - 1000).toISOString() },
+      { id: "demo-photo-2", kind: "photo", displayName: "נועה", message: null, mediaUrl: "/og.png", createdAt: new Date(Date.now() - 2000).toISOString() },
+    ],
+    stats: { photos: 27, blessings: 14 },
+    controls: { enabled: true, paused: false, blank: false },
+    reactions: [],
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 export async function getLiveWallPayload(): Promise<LiveWallPayload> {
-  if (isWeddingDemoEnabled()) {
-    return {
-      items: [
-        { id: "demo-photo", kind: "photo_blessing", displayName: "דנה ותום", message: "שתמיד תרקדו יחד כמו הערב ❤️", mediaUrl: "/images/hero-editorial.jpg", createdAt: new Date().toISOString() },
-        { id: "demo-blessing", kind: "blessing", displayName: "משפחת כהן", message: "מאחלים לכם חיים מלאים באהבה, צחוק והרפתקאות", mediaUrl: null, createdAt: new Date(Date.now() - 1000).toISOString() },
-        { id: "demo-photo-2", kind: "photo", displayName: "נועה", message: null, mediaUrl: "/og.png", createdAt: new Date(Date.now() - 2000).toISOString() },
-      ],
-      stats: { photos: 27, blessings: 14 }, controls: { enabled: true, paused: false, blank: false }, reactions: [], generatedAt: new Date().toISOString(),
-    };
-  }
+  if (isWeddingDemoEnabled()) return getLiveWallDemoPayload();
 
   const db = createAdminClient({ optional: true });
   if (!db) return { items: [], stats: { photos: 0, blessings: 0 }, controls: { enabled: false, paused: false, blank: false }, reactions: [], generatedAt: new Date().toISOString() };
