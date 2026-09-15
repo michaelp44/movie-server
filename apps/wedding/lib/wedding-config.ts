@@ -143,7 +143,7 @@ export const weddingConfig: WeddingConfig = {
     groomHebrew: "מיכאל",
   },
   date: "2026-12-10",
-  dateTime: "2026-12-10T19:00:00+02:00",
+  dateTime: "2026-12-10T19:30:00+02:00",
   endDateTime: "2026-12-11T02:00:00+02:00",
   displayDate: "10.12.2026",
   timezone: "Asia/Jerusalem",
@@ -183,10 +183,10 @@ export const weddingConfig: WeddingConfig = {
   },
   timeline: {
     isPlaceholder: true,
-    note: "השעות עדיין לדוגמה ויעודכנו לאחר סגירת הלו״ז הסופי.",
+    note: "שעות קבלת הפנים והחופה סופיות. המשך הלו״ז יעודכן לאחר סגירת הערב.",
     items: [
       {
-        time: "19:00",
+        time: "19:30",
         title: "קבלת פנים",
         description: "דרינק ראשון, מוזיקה טובה והזמן שלנו להתחבק עם כולם.",
         icon: "doors",
@@ -388,7 +388,7 @@ export const weddingConfig: WeddingConfig = {
       },
       {
         question: "מה ללבוש?",
-        answer: "חגיגי, אלגנטי ובעיקר משהו שנעים לרקוד איתו. אם האירוע יהיה בחוץ, נוסיף כאן המלצה בהתאם למזג האוויר.",
+        answer: "אין קוד לבוש — בואו כמו שאתם אוהבים, ובעיקר עם משהו שנעים לרקוד איתו.",
       },
       {
         question: "יש הסעות?",
