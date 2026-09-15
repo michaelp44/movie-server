@@ -52,7 +52,7 @@
 
 - Replace venue, maps, parking, Bit, schedule, menu, story, FAQ, and photo placeholders after final content is supplied.
 - Optionally remove per-table QR cards if only the main QR will be printed.
-- Add `OPENAI_API_KEY` to Vercel after Supabase is provisioned, then smoke-test safe/review/blocked moderation with disposable content.
+- After Supabase is provisioned, smoke-test safe/review/blocked moderation with disposable content. The OpenAI key is already configured in Vercel Production.
 
 ## Project status
 

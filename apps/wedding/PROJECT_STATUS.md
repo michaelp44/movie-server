@@ -15,6 +15,7 @@ Last updated: 2026-09-15 (Asia/Jerusalem)
 
 - Vercel authentication is active and manual production deployments work.
 - `NEXT_PUBLIC_SITE_URL`, guest-session secrets, rate-limit secrets, the real Google Sheet ID, and the two guest-tab names are configured in Vercel Production.
+- `OPENAI_API_KEY` is configured as a hidden Vercel Production secret; the value is not committed or exposed to the browser.
 - The Google workbook was verified read-only as `אקסל החתונה הגדול` with source tabs `מוזמנים - מיכאל` and `מוזמנים - שובל`; headers are on row 4.
 - The `שולחנות` tab is a capacity summary, not a separate invitation-assignment source.
 - Supabase is not connected. Public database-backed controls fail closed and display friendly Hebrew unavailable states.
@@ -48,4 +49,4 @@ Last updated: 2026-09-15 (Asia/Jerusalem)
 - Ambiguous seating matches and contradictory table rows are reported rather than applied.
 - Table identifiers are canonical numbers from 1 through 999; display names are stored separately.
 - Uploaded media stays private until upload verification and either high-confidence AI approval or explicit admin approval succeed.
-- Live Wall routes are implemented at `/share`, `/live`, and `/admin/live-wall`; production activation still requires Supabase plus the additive Live Wall migration and an OpenAI API key.
+- Live Wall routes are implemented at `/share`, `/live`, and `/admin/live-wall`; production activation still requires Supabase plus the additive Live Wall migration.
