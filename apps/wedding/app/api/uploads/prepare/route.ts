@@ -18,6 +18,13 @@ const bodySchema = z.object({
   tableNumber: z.string().max(3).optional(),
 });
 
+function privateJson(body: unknown, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: { "cache-control": "private, no-store" },
+  });
+}
+
 async function requestIdentifier() {
   const requestHeaders = await headers();
   return requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -29,25 +36,25 @@ export async function POST(request: Request) {
   try {
     const rateLimit = await consumeRateLimit("upload-prepare", await requestIdentifier(), 8, 15 * 60);
     if (!rateLimit.allowed) {
-      return NextResponse.json({ message: "היו הרבה ניסיונות העלאה. חכו כמה דקות ונסו שוב ❤️" }, { status: 429 });
+      return privateJson({ message: "היו הרבה ניסיונות העלאה. חכו כמה דקות ונסו שוב ❤️" }, 429);
     }
 
     const rawBody: unknown = await request.json();
     const parsed = bodySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return NextResponse.json({ message: "פרטי הקבצים אינם תקינים" }, { status: 400 });
+      return privateJson({ message: "פרטי הקבצים אינם תקינים" }, 400);
     }
 
     const validation = validateUploadBatch(parsed.data.files);
     if (!validation.success) {
-      return NextResponse.json({ message: validation.message }, { status: 400 });
+      return privateJson({ message: validation.message }, 400);
     }
 
     const requestedTableNumber = parsed.data.tableNumber
       ? parseTableNumber(parsed.data.tableNumber)
       : null;
     if (parsed.data.tableNumber && !requestedTableNumber) {
-      return NextResponse.json({ message: "מספר השולחן אינו תקין" }, { status: 400 });
+      return privateJson({ message: "מספר השולחן אינו תקין" }, 400);
     }
 
     const invitation = await getCurrentInvitation();
@@ -60,9 +67,9 @@ export async function POST(request: Request) {
       extension: file.extension,
     })));
 
-    return NextResponse.json({ uploads }, { headers: { "cache-control": "no-store" } });
+    return privateJson({ uploads });
   } catch (error) {
     console.error("Upload preparation failed", error);
-    return NextResponse.json({ message: "שירות ההעלאה עדיין לא זמין. נסו שוב מאוחר יותר ❤️" }, { status: 503 });
+    return privateJson({ message: "שירות ההעלאה עדיין לא זמין. נסו שוב מאוחר יותר ❤️" }, 503);
   }
 }

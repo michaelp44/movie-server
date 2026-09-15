@@ -12,6 +12,13 @@ const bodySchema = z.object({
   completionToken: z.string().regex(/^[A-Za-z0-9_-]{24,64}$/),
 });
 
+function privateJson(body: unknown, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: { "cache-control": "private, no-store" },
+  });
+}
+
 async function requestIdentifier() {
   const requestHeaders = await headers();
   return requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -22,16 +29,16 @@ async function requestIdentifier() {
 export async function POST(request: Request) {
   try {
     const rateLimit = await consumeRateLimit("upload-complete", await requestIdentifier(), 80, 15 * 60);
-    if (!rateLimit.allowed) return NextResponse.json({ message: "נסו שוב מאוחר יותר" }, { status: 429 });
+    if (!rateLimit.allowed) return privateJson({ message: "נסו שוב מאוחר יותר" }, 429);
 
     const parsed = bodySchema.safeParse(await request.json());
-    if (!parsed.success) return NextResponse.json({ message: "בקשה לא תקינה" }, { status: 400 });
+    if (!parsed.success) return privateJson({ message: "בקשה לא תקינה" }, 400);
 
     const invitation = await getCurrentInvitation();
     await markMediaUploadComplete(parsed.data.id, parsed.data.completionToken, invitation?.id ?? null);
-    return NextResponse.json({ success: true }, { headers: { "cache-control": "no-store" } });
+    return privateJson({ success: true });
   } catch (error) {
     console.error("Upload completion failed", error);
-    return NextResponse.json({ message: "לא הצלחנו להשלים את ההעלאה" }, { status: 400 });
+    return privateJson({ message: "לא הצלחנו להשלים את ההעלאה" }, 400);
   }
 }

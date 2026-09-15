@@ -1,15 +1,22 @@
 import { getAuthenticatedAdmin } from "@/lib/admin";
 import { previewWeddingSync, synchronizeWeddingGuests } from "@/lib/sync";
 
+function privateJson(body: unknown, status = 200) {
+  return Response.json(body, {
+    status,
+    headers: { "Cache-Control": "private, no-store" },
+  });
+}
+
 function unauthorized() {
-  return Response.json({ error: "Unauthorized" }, { status: 401 });
+  return privateJson({ error: "Unauthorized" }, 401);
 }
 
 export async function GET() {
   if (!(await getAuthenticatedAdmin())) return unauthorized();
   try {
     const preview = await previewWeddingSync();
-    return Response.json({
+    return privateJson({
       counts: preview.counts,
       guestTabNames: preview.guestTabNames,
       seatingTabName: preview.seatingTabName,
@@ -21,19 +28,19 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Google Sheets sync preview API failed", error);
-    return Response.json({ error: "Google Sheets synchronization is unavailable" }, { status: 503 });
+    return privateJson({ error: "Google Sheets synchronization is unavailable" }, 503);
   }
 }
 
 export async function POST(request: Request) {
   if (!(await getAuthenticatedAdmin())) return unauthorized();
   const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) return Response.json({ error: "Invalid origin" }, { status: 403 });
+  if (origin && origin !== new URL(request.url).origin) return privateJson({ error: "Invalid origin" }, 403);
   try {
     const result = await synchronizeWeddingGuests();
-    return Response.json({ report: result.report });
+    return privateJson({ report: result.report });
   } catch (error) {
     console.error("Google Sheets sync API failed", error);
-    return Response.json({ error: "Google Sheets synchronization is unavailable" }, { status: 503 });
+    return privateJson({ error: "Google Sheets synchronization is unavailable" }, 503);
   }
 }
