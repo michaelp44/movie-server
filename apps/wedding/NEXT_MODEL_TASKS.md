@@ -14,6 +14,7 @@
 - Replaced the temporary homepage hero with the supplied photo of Shoval and Michael.
 - Added the Live Wedding Wall, combined guest sharing, AI moderation pipeline, admin controls, reactions, QR assets, demo rotation, and tests.
 - Prepared simple readable backups of all wedding tables and uploaded media to the attached `My Passport` drive.
+- Replaced venue placeholders with verified 5.91 details, working Waze/Google Maps routes, parking guidance, calendar location, and a Bit phone-copy flow.
 
 ## Complex tasks remaining
 
@@ -59,7 +60,7 @@
 
 ## Remaining simple tasks
 
-- Replace venue, maps, parking, Bit, schedule, menu, story, FAQ, and photo placeholders after final content is supplied.
+- Replace schedule, menu, story, remaining FAQ, and photo placeholders after final content is supplied.
 - Optionally remove per-table QR cards if only the main QR will be printed.
 - After Supabase is provisioned, smoke-test safe/review/blocked moderation with disposable content. The OpenAI key is already configured in Vercel Production.
 

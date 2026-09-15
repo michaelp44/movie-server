@@ -91,6 +91,7 @@ export type WeddingConfig = {
   };
   gift: {
     bitUrl: string;
+    bitPhone: string;
     introduction: string;
     bankTransfer: BankTransferDetails;
     isPlaceholder: boolean;
@@ -148,22 +149,23 @@ export const weddingConfig: WeddingConfig = {
   timezone: "Asia/Jerusalem",
   domain: process.env.NEXT_PUBLIC_SITE_URL ?? "https://wedding.my-rem.com",
   venue: {
-    name: "שם האולם — לעדכון",
-    address: "כתובת האולם תתפרסם כאן",
-    parking: "פרטי החניה והכניסה יעודכנו כאן לקראת האירוע.",
-    notes: "כדאי לשמור את העמוד ולבדוק שוב קרוב למועד החתונה.",
-    isPlaceholder: true,
+    name: "5.91 — אירועים על הים",
+    address: "שדרות עובד בן עמי 2, נתניה",
+    parking: "לפי מידע האולם קיימת חניה בשפע במתחם ובסביבתו.",
+    notes: "המתחם נמצא על קו החוף של נתניה. מומלץ לפתוח ניווט לפני היציאה.",
+    isPlaceholder: false,
   },
   maps: {
-    waze: "",
-    googleMaps: "",
+    waze: "https://www.waze.com/ul?q=5.91%20%D7%A9%D7%93%D7%A8%D7%95%D7%AA%20%D7%A2%D7%95%D7%91%D7%93%20%D7%91%D7%9F%20%D7%A2%D7%9E%D7%99%202%20%D7%A0%D7%AA%D7%A0%D7%99%D7%94&navigate=yes",
+    googleMaps: "https://www.google.com/maps/search/?api=1&query=5.91%20%D7%A9%D7%93%D7%A8%D7%95%D7%AA%20%D7%A2%D7%95%D7%91%D7%93%20%D7%91%D7%9F%20%D7%A2%D7%9E%D7%99%202%20%D7%A0%D7%AA%D7%A0%D7%99%D7%94",
   },
   gift: {
     bitUrl: process.env.NEXT_PUBLIC_BIT_URL ?? "",
+    bitPhone: "0503062269",
     introduction:
       "הנוכחות שלכם היא המתנה הכי משמחת בשבילנו. למי שבכל זאת רוצה לפנק, אפשר לעשות זאת כאן בנחת.",
     bankTransfer: null,
-    isPlaceholder: true,
+    isPlaceholder: false,
   },
   calendar: {
     title: "החתונה של שובל ומיכאל",
@@ -174,7 +176,7 @@ export const weddingConfig: WeddingConfig = {
   },
   weather: {
     enabled: false,
-    locationLabel: "אזור האולם — לעדכון",
+    locationLabel: "נתניה, קו החוף",
     prominentDaysBefore: 7,
     provider: null,
     isPlaceholder: true,
@@ -374,11 +376,11 @@ export const weddingConfig: WeddingConfig = {
     items: [
       {
         question: "יש חניה?",
-        answer: "כן. פרטי החניה המדויקים והכניסה המומלצת יעודכנו כאן לאחר סגירה מול האולם.",
+        answer: "כן. לפי המידע שמפרסם 5.91 קיימת חניה בשפע במתחם ובסביבתו.",
       },
       {
         question: "האירוע בפנים או בחוץ?",
-        answer: "התכנון הסופי תלוי במזג האוויר ובחללי האולם. נפרסם כאן עדכון ברור קרוב למועד.",
+        answer: "5.91 נמצא ממש מול הים וכולל חללים פתוחים לצד אולם מקורה עם קירוי זכוכית. התכנון המדויק לערב שלנו יעודכן קרוב למועד בהתאם למזג האוויר.",
       },
       {
         question: "יש מנות טבעוניות וללא גלוטן?",

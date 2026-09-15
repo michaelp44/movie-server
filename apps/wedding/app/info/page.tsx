@@ -34,7 +34,7 @@ export default function InfoPage() {
                   הוספה ליומן
                 </h2>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-stone-600 sm:text-base">
-                  יום חמישי, {weddingConfig.displayDate}. נשמור עבורכם את התאריך, השעות והמיקום — וברגע שהאולם יעודכן, גם קובץ היומן יתעדכן כאן.
+                  יום חמישי, {weddingConfig.displayDate}, ב־5.91 על הים בנתניה. שמרו את התאריך, השעות והמיקום ישירות ביומן.
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">

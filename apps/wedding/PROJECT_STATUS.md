@@ -7,6 +7,7 @@ Last updated: 2026-09-15 (Asia/Jerusalem)
 - Canonical URL: `https://wedding.my-rem.com`
 - Vercel project: `shoval-michael-wedding`
 - Domain and HTTPS are active.
+- Venue information is configured for 5.91, Sderot Oved Ben Ami 2, Netanya; Waze, Google Maps, calendar location, parking guidance, and the Bit recipient phone are wired.
 - Cloudflare DNS: `CNAME wedding -> 3acc03e6f801c80f.vercel-dns-017.com` (DNS only).
 - Public QR assets: `/qr/wedding-site.png` and `/qr/wedding-site.svg`.
 - Do not change the apex domain, `movies.my-rem.com`, nameservers, or the existing Cloudflare Tunnel.

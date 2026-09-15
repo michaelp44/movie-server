@@ -1,5 +1,6 @@
 import { ExternalLink, Gift, Landmark, LockKeyhole } from "lucide-react";
 import { weddingConfig } from "@/lib/wedding-config";
+import { BitPhoneButton } from "@/components/wedding/bit-phone-button";
 
 export function GiftSection() {
   const { gift } = weddingConfig;
@@ -33,6 +34,8 @@ export function GiftSection() {
               שליחת מתנה ב-Bit
               <ExternalLink aria-hidden="true" size={18} />
             </a>
+          ) : gift.bitPhone ? (
+            <BitPhoneButton phone={gift.bitPhone} />
           ) : (
             <div className="mx-auto max-w-md rounded-xl border border-white/12 bg-white/6 px-5 py-4 text-sm leading-6 text-stone-300">
               קישור ה-Bit יופיע כאן לאחר שיוגדר.
