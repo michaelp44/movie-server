@@ -74,6 +74,16 @@ a {
   to { opacity: 1; transform: scale(1); }
 }
 
+@keyframes wall-card-enter {
+  from { opacity: 0; transform: translateY(2rem) scale(.96); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes wall-photo-drift {
+  from { transform: scale(1.02) translate3d(-.5%, -.4%, 0); }
+  to { transform: scale(1.09) translate3d(.7%, .5%, 0); }
+}
+
 @keyframes float-reaction {
   0% { opacity: 0; transform: translateY(2rem) scale(.75) rotate(-4deg); }
   20% { opacity: 1; }
@@ -82,6 +92,8 @@ a {
 
 .animate-wall-reveal { animation: wall-reveal 1.2s cubic-bezier(.22,1,.36,1) both; }
 .animate-float-reaction { animation: float-reaction 3.2s ease-out both; }
+.live-wall-card { animation: wall-card-enter 1.1s cubic-bezier(.22,1,.36,1) both; }
+.live-wall-photo { animation: wall-photo-drift 14s ease-in-out alternate infinite; }
 
 .animate-soft-rise {
   animation: soft-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;

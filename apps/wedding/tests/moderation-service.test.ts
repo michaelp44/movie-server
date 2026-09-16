@@ -37,4 +37,18 @@ describe("AI moderation service", () => {
     );
     expect(result.decision).toBe("approved");
   });
+
+  it("sends images at high detail and explicitly checks obscene gestures", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    let requestBody = "";
+    const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      requestBody = String(init?.body ?? "");
+      return new Response(JSON.stringify({ output: [{ content: [{ type: "output_text", text: JSON.stringify({ decision: "review", reason: "obscene gesture", categories: ["obscene_gesture"], confidence: 0.96 }) }] }] }), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    await moderateWeddingContent({ mediaKind: "image", imageUrl: "https://example.com/photo.jpg" }, fetcher);
+    const body = JSON.parse(requestBody) as { input: Array<{ content: Array<{ detail?: string; text?: string }> }> };
+    expect(body.input[0]?.content.some((part) => part.detail === "high")).toBe(true);
+    expect(body.input[0]?.content.some((part) => part.text?.includes("middle finger"))).toBe(true);
+  });
 });

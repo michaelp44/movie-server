@@ -21,7 +21,7 @@ export async function moderateWeddingContent(
     type: "input_text",
     text: `${moderationPrompt}\n\n${input.mediaKind === "video" ? "The attached image is a server-generated representative frame from a short guest video. " : ""}Guest message: ${input.text?.trim() || "(none)"}`,
   }];
-  if (input.imageUrl) content.push({ type: "input_image", image_url: input.imageUrl, detail: "low" });
+  if (input.imageUrl) content.push({ type: "input_image", image_url: input.imageUrl, detail: "high" });
 
   try {
     const response = await fetcher("https://api.openai.com/v1/responses", {
