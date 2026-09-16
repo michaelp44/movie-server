@@ -27,8 +27,8 @@ export default async function AdminLoginPage({ searchParams }: { searchParams: P
         <form action={loginAdminAction} className="mt-7 grid gap-4">
           <fieldset disabled={!configured} className="grid gap-4">
             <label className="grid gap-1.5 text-sm font-medium">
-              אימייל
-              <input name="email" type="email" autoComplete="email" required className="min-h-12 rounded-xl border border-black/15 px-3 disabled:cursor-not-allowed disabled:bg-black/5" />
+              שם משתמש
+              <input name="username" type="text" autoComplete="username" autoCapitalize="none" spellCheck={false} required className="min-h-12 rounded-xl border border-black/15 px-3 disabled:cursor-not-allowed disabled:bg-black/5" />
             </label>
             <label className="grid gap-1.5 text-sm font-medium">
               סיסמה

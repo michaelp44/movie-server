@@ -1,4 +1,4 @@
-export { createAdminAuthClient, getAuthenticatedAdmin, requireAdmin, userIsAdmin } from "./auth";
+export { configuredAdminEmails, createAdminAuthClient, getAuthenticatedAdmin, requireAdmin, userIsAdmin } from "./auth";
 export {
   getAdminInvitation,
   getAdminOverview,

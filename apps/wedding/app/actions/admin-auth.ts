@@ -4,11 +4,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { createAdminAuthClient, userIsAdmin } from "@/lib/admin";
+import { configuredAdminEmails, createAdminAuthClient, userIsAdmin } from "@/lib/admin";
 import { consumeRateLimit } from "@/lib/rate-limit";
 
 const credentialsSchema = z.object({
-  email: z.string().trim().email().max(254),
+  username: z.string().trim().toLowerCase().pipe(z.literal("admin")),
   password: z.string().min(1).max(1024),
 });
 
@@ -18,10 +18,13 @@ function loginError(message: string): never {
 
 export async function loginAdminAction(formData: FormData): Promise<void> {
   const parsed = credentialsSchema.safeParse({
-    email: formData.get("email"),
+    username: formData.get("username"),
     password: formData.get("password"),
   });
-  if (!parsed.success) loginError("יש להזין כתובת אימייל וסיסמה תקינות.");
+  if (!parsed.success) loginError("שם המשתמש או הסיסמה אינם נכונים.");
+
+  const [email] = configuredAdminEmails();
+  if (!email) loginError("מערכת הניהול עדיין אינה זמינה.");
 
   let loginAllowed = false;
   try {
@@ -43,7 +46,7 @@ export async function loginAdminAction(formData: FormData): Promise<void> {
     console.error("Admin authentication is not configured", error);
     loginError("מערכת הניהול עדיין אינה זמינה.");
   }
-  const { data, error } = await client.auth.signInWithPassword(parsed.data);
+  const { data, error } = await client.auth.signInWithPassword({ email, password: parsed.data.password });
   if (error || !data.user) loginError("פרטי ההתחברות אינם נכונים.");
   if (!userIsAdmin(data.user)) {
     await client.auth.signOut();
