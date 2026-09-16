@@ -24,7 +24,7 @@ export default async function AdminPhotosPage() {
               <div className="flex justify-between gap-3 text-sm"><strong>{photo.displayName || "אורח מזוהה"}</strong><span className="text-black/50">{(photo.fileSize / 1024 / 1024).toFixed(1)} MB</span></div>
               <p className="mt-1 text-xs text-black/45">{new Date(photo.createdAt).toLocaleString("he-IL")}</p>
               <p className="mt-3 text-xs font-semibold">{photo.approved ? "מאושר לגלריה" : photo.rejected ? "נדחה" : "ממתין לבדיקה"}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 grid grid-cols-3 gap-2 [&_button]:w-full">
                 <form action={moderatePhotoAction}><input type="hidden" name="id" value={photo.id} /><input type="hidden" name="decision" value="approve" /><SubmitButton>אישור</SubmitButton></form>
                 <form action={moderatePhotoAction}><input type="hidden" name="id" value={photo.id} /><input type="hidden" name="decision" value="reject" /><SubmitButton>דחייה</SubmitButton></form>
                 <form action={deletePhotoAction}><input type="hidden" name="id" value={photo.id} /><SubmitButton danger pendingLabel="מוחקים…" confirmMessage="למחוק את הקובץ לצמיתות? לא ניתן לבטל את הפעולה.">מחיקה</SubmitButton></form>

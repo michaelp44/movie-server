@@ -21,7 +21,7 @@ export function SubmitButton({
       onClick={(event) => {
         if (confirmMessage && !window.confirm(confirmMessage)) event.preventDefault();
       }}
-      className={`min-h-11 rounded-xl px-4 text-sm font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
+      className={`min-h-12 rounded-xl px-4 text-sm font-semibold transition sm:min-h-11 disabled:cursor-wait disabled:opacity-60 ${
         danger ? "bg-red-700 text-white hover:bg-red-800" : "bg-[#1d1b18] text-white hover:bg-black"
       }`}
     >
