@@ -27,34 +27,16 @@
 - Added a consistent local SQLite/media snapshot to the attached external drive and background LaunchAgents for the fallback service and backup attempts.
 - Reduced short-video uploads to 50MB so the same policy works through Cloudflare and Supabase Free limits.
 - Added server-generated short-video preview frames so AI can moderate local fallback videos; a missing preview fails safely to manual review.
+- Provisioned the production Supabase project, applied all migrations, enabled runtime flags, configured private Storage/RLS, and connected Vercel.
+- Created and verified the production admin account; its generated password is stored only in macOS Keychain.
+- Enabled the Google Sheets API, created a service credential, shared the real wedding workbook read-only, and configured Vercel.
+- Synchronized 264 invitations from `מוזמנים - מיכאל` and `מוזמנים - שובל` into Supabase.
+- Verified production admin login, guest phone identification, personalized home, Live Wall feed, gallery pages, and like/unlike persistence.
+- Fixed sync audit rows so previews and applies no longer violate required JSON fields, and added the real `קבוצה` header alias.
 
 ## Complex tasks remaining
 
-### 1. Provision and connect Supabase
-
-- What needs to be done: Create a dedicated project, apply all SQL migrations in filename order, configure Vercel keys, and create the first admin user.
-- Why complex/risky: Requires authenticated account access, secret handling, database migration, and production authorization checks.
-- Relevant files: `supabase/migrations/`, `lib/supabase/`, `lib/admin/auth.ts`, `.env.example`.
-- Current known state: The Supabase login page is open, but no account session or project credentials are available. Production controls fail closed.
-- Suggested next step: User signs in to Supabase; then create the project, apply the migration, add keys to Vercel, and run an authenticated smoke test.
-
-### 2. Connect Google service-account synchronization
-
-- What needs to be done: Create a read-only service account, share the wedding workbook with it, add its email/private key to Vercel, preview sync, review conflicts, and apply.
-- Why complex/risky: Handles private guest data and credentials; a bad identity mapping can overwrite source-managed fields.
-- Relevant files: `lib/google-sheets/`, `lib/sync/`, `app/admin/(dashboard)/sync/`, `.env.example`.
-- Current known state: Workbook ID and source tabs are configured. The app still lacks service-account credentials.
-- Suggested next step: Create/share the service account, deploy secrets, then run preview before apply.
-
-### 3. Complete authenticated production end-to-end verification
-
-- What needs to be done: Test real phone identification, returning session, personalized link, seating publication, upload completion, moderation, gallery publication, guestbook, songs, and admin logout.
-- Why complex/risky: Requires live Supabase data and exercises privacy/security boundaries.
-- Relevant files: `app/actions/`, `app/api/`, `lib/guest-data/`, `lib/guest-session/`, `lib/data/guest-interactions.ts`.
-- Current known state: Unit/build checks pass; database-backed controls are intentionally disabled in production.
-- Suggested next step: Run the flows with one dedicated test invitation after Supabase setup.
-
-### 4. Add local emergency admin authentication
+### 1. Add local emergency admin authentication
 
 - What needs to be done: Add an emergency admin session that remains usable when Supabase Auth is unavailable.
 - Why complex/risky: It is an authentication boundary protecting guest data and destructive moderation controls; an unsafe shortcut would expose the admin dashboard.
@@ -62,7 +44,15 @@
 - Current known state: The user asked to defer login work. Guest content continues anonymously during an outage, but admin login still requires Supabase.
 - Suggested next step: When login work resumes, use a rate-limited Keychain-backed emergency passcode and a separate signed HttpOnly cookie.
 
-### 5. Connect GitHub and Vercel Git deployment
+### 2. Resolve remaining source-sheet data warnings
+
+- What needs to be done: Correct 36 invalid/non-Israeli phone cells and one duplicate invitation identity in the source workbook.
+- Why complex/risky: Guest identity data is private and the duplicate needs a human decision about whether it represents one household or two invitations.
+- Relevant files: `lib/google-sheets/mapping.ts`, `lib/sync/`, source workbook rows reported by `/admin/sync`.
+- Current known state: 264 invitations are synchronized. The warnings are preserved for review; invalid phones are not used for login and no source rows are deleted.
+- Suggested next step: Review the flagged rows in `/admin/sync`, correct the source workbook, preview, then apply again.
+
+### 3. Connect GitHub and Vercel Git deployment
 
 - What needs to be done: Authenticate GitHub, push local commits, and connect the dedicated Vercel project to the monorepo with `apps/wedding` as its root.
 - Why complex/risky: Current repository contains unrelated user changes; incorrect project/root configuration could affect other apps.
@@ -72,12 +62,11 @@
 
 ## Remaining simple tasks
 
-- Grant `/opt/homebrew/bin/node` macOS access to removable volumes, then load the prepared five-minute external-backup LaunchAgent.
 - Replace schedule, menu, story, remaining FAQ, and photo placeholders after final content is supplied.
 - Optionally remove per-table QR cards if only the main QR will be printed.
-- After Supabase is provisioned, smoke-test safe/review/blocked moderation with disposable content. The OpenAI key is already configured in Vercel Production.
+- Run a disposable safe/review/blocked moderation test shortly before the event, then remove the test content.
 - Print-test `/qr` on the exact paper/printer that will be used at the venue.
 
 ## Project status
 
-The public site, domain, HTTPS, QR assets, responsive UI, Mac fallback service, external snapshot, anonymous uploads/messages, gallery, likes, reactions, and Live Wall can work without Supabase. Guest personalization, admin authentication, Google Sheet sync, and the cloud primary still need the Supabase/Google credentials to be connected.
+The production site, domain, HTTPS, Supabase primary, Google Sheet sync, guest identification, admin, private uploads, AI moderation, gallery likes, reactions, Live Wall, Mac failover, and external backups are operational. Remaining work is primarily final wedding content and correcting source-sheet phone warnings.

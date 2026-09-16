@@ -88,6 +88,7 @@ export const defaultHeaderAliases: HeaderAliases = {
     "side",
     "family side",
     "קבוצת אורחים",
+    "קבוצה",
     "קטגוריה",
     "צד",
     "משפחה",

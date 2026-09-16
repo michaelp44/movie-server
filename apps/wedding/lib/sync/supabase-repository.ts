@@ -132,6 +132,7 @@ export class SupabaseSyncRepository implements SyncRepository {
         source_row_id: item.source.sourceRowId,
         action: "addition" as const,
         display_name: item.source.displayName,
+        changes: jsonValue({}),
         source_payload: jsonValue(item.source.sourcePayload),
       })),
       ...plan.updates.map((item) => ({
@@ -149,6 +150,8 @@ export class SupabaseSyncRepository implements SyncRepository {
         source_row_id: item.source.sourceRowId,
         action: "unchanged" as const,
         display_name: item.source.displayName,
+        changes: jsonValue({}),
+        source_payload: jsonValue(item.source.sourcePayload),
       })),
       ...plan.missing.map((item) => ({
         sync_run_id: runId,
@@ -156,12 +159,15 @@ export class SupabaseSyncRepository implements SyncRepository {
         source_row_id: item.invitation.sourceRowId,
         action: "missing" as const,
         display_name: item.invitation.displayName,
+        changes: jsonValue({}),
+        source_payload: jsonValue({}),
       })),
       ...plan.conflicts.map((item) => ({
         sync_run_id: runId,
         source_row_id: item.sourceRowId ?? null,
         action: "conflict" as const,
         changes: jsonValue(item),
+        source_payload: jsonValue({}),
         error: item.message,
       })),
       ...plan.mappingIssues.map((item) => ({
@@ -169,6 +175,7 @@ export class SupabaseSyncRepository implements SyncRepository {
         source_row_id: item.rowNumber ? `row:${item.rowNumber}` : null,
         action: "error" as const,
         changes: jsonValue(item),
+        source_payload: jsonValue({}),
         error: item.message,
       })),
     ];
