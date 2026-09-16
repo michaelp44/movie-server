@@ -92,6 +92,7 @@ openssl rand -base64 48
 | `WEDDING_DEMO_MODE` | Server only | Local only | Enables the small in-memory guest fixture outside production |
 | `OPENAI_API_KEY` | Server only | For automatic moderation | OpenAI project key; never expose it to the browser |
 | `OPENAI_MODERATION_MODEL` | Server only | Optional | Vision-capable model used by the wedding policy; defaults to `gpt-5-mini` |
+| `OPENAI_IMAGE_MODEL` | Server only | Optional | Image-edit model for occasional Live Wall illustrations; defaults to `gpt-image-2.5-flare` |
 | `WEDDING_BACKUP_DRIVE` | Local only | For backups | Mounted external volume; defaults to `/Volumes/My Passport` |
 
 Do not commit `.env.local`. Vercel secrets must be added in Project Settings > Environment Variables.
@@ -168,6 +169,8 @@ For local presentation testing, set `WEDDING_DEMO_MODE=true`; `/live` then shows
 ### Automatic Mac fallback
 
 The venue-critical guest interactions are dual-written to Supabase and the Mac whenever both are healthy. Supabase calls use a short timeout; if they fail, the same request is written to the Mac over an HMAC-signed private API. Live Wall and gallery reads merge both sources by stable submission ID, so content created during a Supabase outage remains visible after recovery instead of disappearing.
+
+The Live Wall rotates between a cinematic collage, a full-screen premiere for newly approved content, large blessing typography, a multi-photo mosaic, and occasional original-versus-illustration reveals. Illustration generation is controlled by `live_wall_ai_art`, samples roughly one in five approved images, runs outside the guest upload response, stores the result privately, and moderates the generated result before display. Failed generation never replaces or hides the original upload.
 
 The Mac service listens only on `127.0.0.1:8789`. Cloudflare Tunnel exposes only `wedding-origin.my-rem.com`; all `/v1/*` requests require a timestamped signature, uploads require a one-time token, and media URLs are signed and expiring. The service runs as the `com.shoval-michael.wedding-fallback` LaunchAgent and restarts automatically. Its active data is under `~/Library/Application Support/ShovalMichaelWedding` to avoid SQLite locking problems on removable disks.
 

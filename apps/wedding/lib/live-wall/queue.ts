@@ -4,6 +4,7 @@ export type WallItem = {
   displayName: string | null;
   message: string | null;
   mediaUrl: string | null;
+  illustrationUrl?: string | null;
   createdAt: string;
 };
 

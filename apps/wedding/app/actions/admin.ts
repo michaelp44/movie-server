@@ -121,7 +121,7 @@ export async function saveTableAction(formData: FormData): Promise<void> {
 export async function setSiteFlagAction(formData: FormData): Promise<void> {
   await requireAdmin();
   const key = String(formData.get("key") ?? "");
-  if (!["seating_published", "gallery_published"].includes(key)) throw new Error("Invalid setting key.");
+  if (!["seating_published", "gallery_published", "live_wall_ai_art"].includes(key)) throw new Error("Invalid setting key.");
   const enabled = formData.get("enabled") === "true";
   const db = createAdminDataClient();
   const { error } = await db

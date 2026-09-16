@@ -140,6 +140,9 @@ export type Database = {
           moderation_confidence: number | null;
           approved_at: string | null;
           hidden_at: string | null;
+          illustration_path: string | null;
+          illustration_status: "PENDING" | "GENERATING" | "READY" | "SKIPPED" | "FAILED" | "BLOCKED";
+          illustration_created_at: string | null;
         };
         Insert: TimestampInsert & {
           id?: string;
@@ -163,6 +166,9 @@ export type Database = {
           moderation_confidence?: number | null;
           approved_at?: string | null;
           hidden_at?: string | null;
+          illustration_path?: string | null;
+          illustration_status?: "PENDING" | "GENERATING" | "READY" | "SKIPPED" | "FAILED" | "BLOCKED";
+          illustration_created_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["photo_uploads"]["Insert"]>;
         Relationships: [

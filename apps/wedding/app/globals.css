@@ -84,6 +84,30 @@ a {
   to { transform: scale(1.09) translate3d(.7%, .5%, 0); }
 }
 
+@keyframes wall-premiere {
+  0% { opacity: 0; transform: translateY(-1rem) scale(.9); letter-spacing: .32em; }
+  100% { opacity: 1; transform: translateY(0) scale(1); letter-spacing: .16em; }
+}
+
+@keyframes wall-quote-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.018); }
+}
+
+@keyframes wall-polaroid-enter {
+  from { opacity: 0; transform: translateY(3rem) rotate(0deg) scale(.82); }
+}
+
+@keyframes wall-illustration-reveal {
+  from { clip-path: inset(0 100% 0 0); filter: saturate(.4); }
+  to { clip-path: inset(0 0 0 0); filter: saturate(1); }
+}
+
+@keyframes wall-aurora {
+  0%, 100% { filter: hue-rotate(0deg); opacity: .7; }
+  50% { filter: hue-rotate(18deg); opacity: 1; }
+}
+
 @keyframes float-reaction {
   0% { opacity: 0; transform: translateY(2rem) scale(.75) rotate(-4deg); }
   20% { opacity: 1; }
@@ -94,6 +118,25 @@ a {
 .animate-float-reaction { animation: float-reaction 3.2s ease-out both; }
 .live-wall-card { animation: wall-card-enter 1.1s cubic-bezier(.22,1,.36,1) both; }
 .live-wall-photo { animation: wall-photo-drift 14s ease-in-out alternate infinite; }
+.live-wall-premiere-badge { animation: wall-premiere 1.1s cubic-bezier(.22,1,.36,1) both; }
+.live-wall-quote { animation: wall-quote-breathe 7s ease-in-out infinite; }
+.live-wall-illustration-reveal { animation: wall-illustration-reveal 2.8s .7s cubic-bezier(.22,1,.36,1) both; }
+.live-wall-grain {
+  background-image: repeating-linear-gradient(117deg, rgba(255,255,255,.025) 0 1px, transparent 1px 4px);
+  mix-blend-mode: overlay;
+}
+.live-wall-party::before {
+  position: absolute;
+  inset: -20%;
+  content: "";
+  background: radial-gradient(circle at 25% 30%, rgba(97, 55, 135, .22), transparent 32%), radial-gradient(circle at 75% 70%, rgba(195, 137, 55, .17), transparent 36%);
+  animation: wall-aurora 10s ease-in-out infinite;
+}
+.live-wall-polaroid { width: clamp(9rem, 15vw, 19rem); aspect-ratio: 4 / 5; }
+.live-wall-polaroid-1 { left: 4%; top: 7%; transform: rotate(-8deg); animation: wall-polaroid-enter 1.2s .1s cubic-bezier(.22,1,.36,1) both; }
+.live-wall-polaroid-2 { right: 4%; top: 5%; transform: rotate(7deg); animation: wall-polaroid-enter 1.2s .2s cubic-bezier(.22,1,.36,1) both; }
+.live-wall-polaroid-3 { bottom: 5%; left: 8%; transform: rotate(5deg); animation: wall-polaroid-enter 1.2s .3s cubic-bezier(.22,1,.36,1) both; }
+.live-wall-polaroid-4 { right: 8%; bottom: 4%; transform: rotate(-6deg); animation: wall-polaroid-enter 1.2s .4s cubic-bezier(.22,1,.36,1) both; }
 
 .animate-soft-rise {
   animation: soft-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
