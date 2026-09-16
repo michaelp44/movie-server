@@ -105,7 +105,7 @@ export function LiveWallScreen({ initial, demo = false }: { initial: LiveWallPay
         ) : current?.message ? (
           <blockquote className="max-w-[1500px]"><p className="font-serif text-[clamp(3rem,7vw,8rem)] leading-[1.18]">״{current.message}״</p>{current.displayName ? <footer className="mt-10 text-[clamp(1.3rem,2.5vw,2.5rem)] text-[#d7bd91]">— {current.displayName}</footer> : null}</blockquote>
         ) : (
-          <div><p className="font-serif text-[clamp(4rem,9vw,10rem)]">מחכים לרגעים שלכם</p><p className="mt-6 text-[clamp(1.2rem,2vw,2rem)] text-white/60">שתפו תמונה או ברכה והיא תופיע כאן לאחר בדיקה</p></div>
+          <div><p className="font-serif text-[clamp(4rem,9vw,10rem)]">מחכים לרגעים שלכם</p><p className="mt-6 text-[clamp(1.2rem,2vw,2rem)] text-white/60">שתפו תמונה או ברכה והיא תופיע כאן</p></div>
         )}
       </section>
 
