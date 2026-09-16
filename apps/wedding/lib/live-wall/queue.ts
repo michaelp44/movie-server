@@ -5,6 +5,7 @@ export type WallItem = {
   message: string | null;
   mediaUrl: string | null;
   illustrationUrl?: string | null;
+  likeCount?: number;
   createdAt: string;
 };
 

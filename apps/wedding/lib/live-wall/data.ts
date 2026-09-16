@@ -16,7 +16,7 @@ export type LiveWallPayload = {
 export function getLiveWallDemoPayload(): LiveWallPayload {
   return {
     items: [
-      { id: "demo-photo", kind: "photo_blessing", displayName: "דנה ותום", message: "שתמיד תרקדו יחד כמו הערב ❤️", mediaUrl: "/images/hero-editorial.jpg", illustrationUrl: "/og.png", createdAt: new Date().toISOString() },
+      { id: "demo-photo", kind: "photo_blessing", displayName: "דנה ותום", message: "שתמיד תרקדו יחד כמו הערב ❤️", mediaUrl: "/images/hero-editorial.jpg", illustrationUrl: "/og.png", likeCount: 18, createdAt: new Date().toISOString() },
       { id: "demo-blessing", kind: "blessing", displayName: "משפחת כהן", message: "מאחלים לכם חיים מלאים באהבה, צחוק והרפתקאות", mediaUrl: null, createdAt: new Date(Date.now() - 1000).toISOString() },
       { id: "demo-photo-2", kind: "photo", displayName: "נועה", message: null, mediaUrl: "/og.png", createdAt: new Date(Date.now() - 2000).toISOString() },
       { id: "demo-photo-3", kind: "photo_blessing", displayName: "רוני ועומר", message: "ערב בלתי נשכח לזוג הכי יפה", mediaUrl: "/images/hero-editorial.jpg", createdAt: new Date(Date.now() - 3000).toISOString() },
@@ -74,6 +74,13 @@ export async function getLiveWallPayload(): Promise<LiveWallPayload> {
   const illustrationRows = (photosResult.data ?? []).filter((row) => row.illustration_path);
   const anyError = [settingsResult.error, photosResult.error, blessingsResult.error, photoCount.error, blessingCount.error, reactionsResult.error].find(Boolean);
   if (anyError) throw anyError;
+  const photoIds = (photosResult.data ?? []).map((row) => row.id);
+  const { data: likes, error: likesError } = photoIds.length
+    ? await db.from("photo_likes").select("photo_id").in("photo_id", photoIds).limit(10_000)
+    : { data: [], error: null };
+  if (likesError) console.error("Live Wall likes could not be loaded", likesError);
+  const likeCounts = new Map<string, number>();
+  for (const like of likes ?? []) likeCounts.set(like.photo_id, (likeCounts.get(like.photo_id) ?? 0) + 1);
   const signed = paths.length ? await db.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(paths, 15 * 60) : { data: [] };
   const signedIllustrations = illustrationRows.length
     ? await db.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(illustrationRows.map((row) => row.illustration_path!), 15 * 60)
@@ -81,7 +88,7 @@ export async function getLiveWallPayload(): Promise<LiveWallPayload> {
   const illustrationUrls = new Map(illustrationRows.map((row, index) => [row.id, signedIllustrations.data?.[index]?.signedUrl ?? null]));
   const photos: WallItem[] = (photosResult.data ?? []).flatMap((row, index) => {
     const mediaUrl = signed.data?.[index]?.signedUrl;
-    return mediaUrl ? [{ id: `photo:${row.id}`, kind: row.message ? "photo_blessing" : "photo", displayName: row.uploader_name, message: row.message, mediaUrl, illustrationUrl: illustrationUrls.get(row.id) ?? null, createdAt: row.created_at }] : [];
+    return mediaUrl ? [{ id: `photo:${row.id}`, kind: row.message ? "photo_blessing" : "photo", displayName: row.uploader_name, message: row.message, mediaUrl, illustrationUrl: illustrationUrls.get(row.id) ?? null, likeCount: likeCounts.get(row.id) ?? 0, createdAt: row.created_at }] : [];
   });
   const blessings: WallItem[] = (blessingsResult.data ?? []).map((row) => ({ id: `blessing:${row.id}`, kind: "blessing", displayName: row.display_name, message: row.message, mediaUrl: null, createdAt: row.created_at }));
   const settings = Object.fromEntries((settingsResult.data ?? []).map((row) => [row.key, row.value]));

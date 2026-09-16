@@ -7,7 +7,7 @@ import { buildWallQueue, type WallItem } from "@/lib/live-wall/queue";
 const CALM_ROTATION_MS = 11_000;
 const PARTY_ROTATION_MS = 8_500;
 const FRAME_SIZE = 5;
-type Scene = "collage" | "spotlight" | "blessing" | "mosaic" | "illustration";
+type Scene = "collage" | "spotlight" | "blessing" | "mosaic" | "illustration" | "favorite";
 
 function uniqueFrame(queue: WallItem[], all: WallItem[], count = FRAME_SIZE): WallItem[] {
   const seen = new Set<string>();
@@ -76,12 +76,13 @@ function MosaicScene({ items }: { items: WallItem[] }) {
   );
 }
 
-function SpotlightScene({ item, premiere = false }: { item: WallItem; premiere?: boolean }) {
+function SpotlightScene({ item, premiere = false, favorite = false }: { item: WallItem; premiere?: boolean; favorite?: boolean }) {
   if (!item.mediaUrl) return <BlessingCard item={item} />;
   return (
     <article className="live-wall-spotlight relative h-full overflow-hidden rounded-[clamp(1.5rem,2.5vw,3rem)] bg-black shadow-[0_35px_120px_rgba(0,0,0,.5)]">
       <Media item={item} /><div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/20" />
       {premiere ? <div className="live-wall-premiere-badge absolute left-[clamp(1.5rem,3vw,3.5rem)] top-[clamp(1.5rem,3vw,3.5rem)] rounded-full border border-white/20 bg-black/35 px-5 py-2 text-[clamp(.75rem,1vw,1rem)] font-semibold tracking-[.16em] backdrop-blur">הרגע הגיע למסך ✦</div> : null}
+      {favorite ? <div className="live-wall-premiere-badge absolute left-[clamp(1.5rem,3vw,3.5rem)] top-[clamp(1.5rem,3vw,3.5rem)] rounded-full border border-white/20 bg-black/35 px-5 py-2 text-[clamp(.75rem,1vw,1rem)] font-semibold tracking-[.1em] backdrop-blur">אחד הרגעים שאהבתם במיוחד ♥</div> : null}
       <PhotoCaption item={item} prominent />
     </article>
   );
@@ -142,8 +143,12 @@ export function LiveWallScreen({ initial, demo = false }: { initial: LiveWallPay
     const photos = next.filter((item) => item.mediaUrl);
     const blessings = next.filter((item) => !item.mediaUrl && item.message);
     const illustrated = payload.items.filter((item) => item.illustrationUrl);
+    const favorite = payload.items.filter((item) => item.mediaUrl && (item.likeCount ?? 0) > 0).sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0))[0];
     let nextScene: Scene = "collage";
-    if (nextNumber % 8 === 0 && illustrated.length) {
+    if (nextNumber % 10 === 0 && favorite) {
+      nextScene = "favorite";
+      next.unshift(favorite);
+    } else if (nextNumber % 8 === 0 && illustrated.length) {
       nextScene = "illustration";
       const illustratedItem = illustrated.find((item) => !history.slice(-8).includes(item.id)) ?? illustrated[0]!;
       next.unshift(illustratedItem);
@@ -250,7 +255,7 @@ export function LiveWallScreen({ initial, demo = false }: { initial: LiveWallPay
         {featured ? (
           scene === "illustration" ? <IllustrationScene item={visible.find((item) => item.illustrationUrl) ?? featured} />
             : scene === "blessing" && blessing ? <BlessingScene blessing={blessing} photos={payload.items.filter((item) => item.mediaUrl)} />
-              : scene === "spotlight" ? <SpotlightScene item={featured} premiere={premiere} />
+              : scene === "spotlight" || scene === "favorite" ? <SpotlightScene item={featured} premiere={premiere} favorite={scene === "favorite"} />
                 : scene === "mosaic" ? <MosaicScene items={visible} />
                   : <CollageScene items={visible} />
         ) : <div className="grid h-full place-items-center text-center"><div><p className="font-serif text-[clamp(4rem,9vw,10rem)]">מחכים לרגעים שלכם</p><p className="mt-6 text-[clamp(1.2rem,2vw,2rem)] text-white/60">שתפו תמונה או ברכה והיא תופיע כאן</p></div></div>}
