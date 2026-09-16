@@ -1,11 +1,12 @@
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { markMediaUploadComplete } from "@/lib/data/guest-interactions";
 import { getCurrentInvitation } from "@/lib/guest-data";
 import { consumeRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const bodySchema = z.object({
   id: z.uuid(),
@@ -36,8 +37,15 @@ export async function POST(request: Request) {
     if (!parsed.success) return privateJson({ message: "בקשה לא תקינה" }, 400);
 
     const invitation = await getCurrentInvitation();
-    const moderationStatus = await markMediaUploadComplete(parsed.data.id, parsed.data.completionToken, invitation?.id ?? null, parsed.data.backend);
-    return privateJson({ success: true, moderationStatus });
+    const completion = await markMediaUploadComplete(parsed.data.id, parsed.data.completionToken, invitation?.id ?? null, parsed.data.backend);
+    after(async () => {
+      try {
+        await completion.moderate();
+      } catch (error) {
+        console.error("Background upload moderation failed", error);
+      }
+    });
+    return privateJson({ success: true, moderationStatus: completion.moderationStatus });
   } catch (error) {
     console.error("Upload completion failed", error);
     return privateJson({ message: "לא הצלחנו להשלים את ההעלאה" }, 400);

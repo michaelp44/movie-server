@@ -169,13 +169,22 @@ export async function createMediaUpload(input: {
   }
 }
 
-export async function markMediaUploadComplete(id: string, completionToken: string, invitationId: string | null, backend: "supabase" | "fallback" = "supabase") {
+type UploadCompletion = {
+  moderationStatus: "PENDING";
+  moderate: () => Promise<void>;
+};
+
+export async function markMediaUploadComplete(id: string, completionToken: string, invitationId: string | null, backend: "supabase" | "fallback" = "supabase"): Promise<UploadCompletion> {
   if (backend === "fallback") {
     const record = await fallbackRequest<{ id: string; message: string | null; mediaKind: "image" | "video"; mediaUrl: string; previewImageUrl: string | null }>("/v1/uploads/complete", { method: "POST", timeoutMs: 35_000, body: { id, completionToken } });
-    const moderation = await moderateWeddingContent({ text: record.message, imageUrl: record.previewImageUrl, mediaKind: record.mediaKind });
-    const status = decisionToStatus(moderation.decision);
-    await fallbackRequest("/v1/uploads/moderate", { method: "POST", body: { operationId: id, id, status, reason: moderation.reason } });
-    return status;
+    return {
+      moderationStatus: "PENDING",
+      moderate: async () => {
+        const moderation = await moderateWeddingContent({ text: record.message, imageUrl: record.previewImageUrl, mediaKind: record.mediaKind });
+        const status = decisionToStatus(moderation.decision);
+        await fallbackRequest("/v1/uploads/moderate", { method: "POST", body: { operationId: id, id, status, reason: moderation.reason } });
+      },
+    };
   }
   const supabase = createAdminClient();
   const tokenHash = createHash("sha256").update(completionToken).digest("hex");
@@ -214,46 +223,42 @@ export async function markMediaUploadComplete(id: string, completionToken: strin
     .eq("upload_token_hash", tokenHash);
   if (error) throw error;
 
-  const { data: signed } = await storage.createSignedUrl(record.storage_path, 5 * 60);
-  let moderationImageUrl = record.media_kind === "image" ? signed?.signedUrl ?? null : null;
-  let mirrored = false;
-  if (isFallbackConfigured() && signed?.signedUrl) {
-    try {
-      const mirror = await fallbackRequest<{ previewImageUrl: string | null }>("/v1/uploads/mirror", { method: "POST", timeoutMs: 40_000, body: { operationId: id, id, invitationId: record.invitation_id, displayName: record.uploader_name, message: record.message, mediaUrl: signed.signedUrl, mediaPath: record.storage_path, mimeType: record.mime_type, fileSize: record.file_size, mediaKind: record.media_kind, status: "PENDING", reason: null, createdAt: record.created_at } });
-      moderationImageUrl = mirror.previewImageUrl ?? moderationImageUrl;
-      mirrored = true;
-    } catch (error) {
-      console.error("Fallback media pre-mirror failed", error);
-    }
-  }
-  const moderation = await moderateWeddingContent({
-    text: record.message,
-    imageUrl: moderationImageUrl,
-    mediaKind: record.media_kind,
-  });
-  const status = decisionToStatus(moderation.decision);
-  const now = new Date().toISOString();
-  const { error: moderationError } = await supabase.from("photo_uploads").update({
-    moderation_status: status,
-    moderation_reason: moderation.reason,
-    moderation_categories: moderation.categories,
-    moderation_confidence: moderation.confidence,
-    approved: status === "APPROVED",
-    rejected: status === "BLOCKED",
-    approved_at: status === "APPROVED" ? now : null,
-    moderated_at: now,
-  }).eq("id", id);
-  if (moderationError) throw moderationError;
-  if (isFallbackConfigured() && mirrored) {
-    await fallbackRequest("/v1/uploads/moderate", { method: "POST", body: { operationId: id, id, status, reason: moderation.reason } }).catch((error) => console.error("Fallback media moderation mirror failed", error));
-  } else if (isFallbackConfigured() && signed?.signedUrl) {
-    try {
-      await fallbackRequest("/v1/uploads/mirror", { method: "POST", timeoutMs: 35_000, body: { operationId: id, id, invitationId: record.invitation_id, displayName: record.uploader_name, message: record.message, mediaUrl: signed.signedUrl, mediaPath: record.storage_path, mimeType: record.mime_type, fileSize: record.file_size, mediaKind: record.media_kind, status, reason: moderation.reason, createdAt: record.created_at } });
-    } catch (error) {
-      console.error("Fallback media mirror failed", error);
-    }
-  }
-  return status;
+  return {
+    moderationStatus: "PENDING",
+    moderate: async () => {
+      const { data: signed } = await storage.createSignedUrl(record.storage_path, 5 * 60);
+      let moderationImageUrl = record.media_kind === "image" ? signed?.signedUrl ?? null : null;
+      let mirrored = false;
+      if (isFallbackConfigured() && signed?.signedUrl) {
+        try {
+          const mirror = await fallbackRequest<{ previewImageUrl: string | null }>("/v1/uploads/mirror", { method: "POST", timeoutMs: 40_000, body: { operationId: id, id, invitationId: record.invitation_id, displayName: record.uploader_name, message: record.message, mediaUrl: signed.signedUrl, mediaPath: record.storage_path, mimeType: record.mime_type, fileSize: record.file_size, mediaKind: record.media_kind, status: "PENDING", reason: null, createdAt: record.created_at } });
+          moderationImageUrl = mirror.previewImageUrl ?? moderationImageUrl;
+          mirrored = true;
+        } catch (error) {
+          console.error("Fallback media pre-mirror failed", error);
+        }
+      }
+      const moderation = await moderateWeddingContent({ text: record.message, imageUrl: moderationImageUrl, mediaKind: record.media_kind });
+      const status = decisionToStatus(moderation.decision);
+      const now = new Date().toISOString();
+      const { error: moderationError } = await supabase.from("photo_uploads").update({
+        moderation_status: status,
+        moderation_reason: moderation.reason,
+        moderation_categories: moderation.categories,
+        moderation_confidence: moderation.confidence,
+        approved: status === "APPROVED",
+        rejected: status === "BLOCKED",
+        approved_at: status === "APPROVED" ? now : null,
+        moderated_at: now,
+      }).eq("id", id);
+      if (moderationError) throw moderationError;
+      if (isFallbackConfigured() && mirrored) {
+        await fallbackRequest("/v1/uploads/moderate", { method: "POST", body: { operationId: id, id, status, reason: moderation.reason } }).catch((error) => console.error("Fallback media moderation mirror failed", error));
+      } else if (isFallbackConfigured() && signed?.signedUrl) {
+        await fallbackRequest("/v1/uploads/mirror", { method: "POST", timeoutMs: 35_000, body: { operationId: id, id, invitationId: record.invitation_id, displayName: record.uploader_name, message: record.message, mediaUrl: signed.signedUrl, mediaPath: record.storage_path, mimeType: record.mime_type, fileSize: record.file_size, mediaKind: record.media_kind, status, reason: moderation.reason, createdAt: record.created_at } }).catch((error) => console.error("Fallback media mirror failed", error));
+      }
+    },
+  };
 }
 
 export async function getApprovedGallery(viewerHash: string | null = null): Promise<ApprovedMedia[]> {
