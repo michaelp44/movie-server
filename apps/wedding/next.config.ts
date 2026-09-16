@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
     const production = process.env.NODE_ENV === "production";
     const contentSecurityPolicy = [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline'${production ? "" : " 'unsafe-eval'"}`,
+      `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${production ? "" : " 'unsafe-eval'"}`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.supabase.co",
       "media-src 'self' blob: https://*.supabase.co",

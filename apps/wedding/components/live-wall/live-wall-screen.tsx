@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LiveWallPayload } from "@/lib/live-wall/data";
 import { buildWallQueue, type WallItem } from "@/lib/live-wall/queue";
+import { detectPhotoFaces } from "@/lib/live-wall/face-detection";
+import { faceCropPosition } from "@/lib/live-wall/face-crop";
 
 const CALM_ROTATION_MS = 11_000;
 const PARTY_ROTATION_MS = 8_500;
@@ -18,22 +20,41 @@ function uniqueFrame(queue: WallItem[], all: WallItem[], count = FRAME_SIZE): Wa
   }).slice(0, count);
 }
 
-function SafeImage({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
+function SmartCropImage({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [objectPosition, setObjectPosition] = useState("50% 35%");
+  useEffect(() => {
+    const image = imageRef.current;
+    if (!image) return;
+    let active = true;
+    const update = async () => {
+      if (!image.complete || !image.naturalWidth) return;
+      const faces = await detectPhotoFaces(image);
+      if (active) setObjectPosition(faceCropPosition(image.naturalWidth, image.naturalHeight, image.clientWidth, image.clientHeight, faces));
+    };
+    image.addEventListener("load", update);
+    const observer = new ResizeObserver(() => void update());
+    observer.observe(image);
+    void update();
+    return () => { active = false; observer.disconnect(); image.removeEventListener("load", update); };
+  }, [src]);
+
   return (
-    <>
-      {/* A blurred duplicate fills mismatched aspect ratios while the foreground always keeps the entire photo visible. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" aria-hidden="true" className="live-wall-photo-backdrop" />
-      <span className="absolute inset-0 bg-black/10" aria-hidden="true" />
-      {/* Private signed URLs cannot use the public Next image optimizer. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className={`live-wall-photo-safe ${className}`} />
-    </>
+    // Private signed URLs cannot use the public Next image optimizer.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      ref={imageRef}
+      alt={alt}
+      crossOrigin="anonymous"
+      className={`live-wall-photo-smart ${className}`}
+      style={{ objectPosition }}
+    />
   );
 }
 
 function Media({ item, className = "" }: { item: WallItem; className?: string }) {
-  return item.mediaUrl ? <SafeImage src={item.mediaUrl} alt="רגע מהחתונה" className={className} /> : null;
+  return item.mediaUrl ? <SmartCropImage src={item.mediaUrl} alt="רגע מהחתונה" className={className} /> : null;
 }
 
 function PhotoCaption({ item, prominent = false }: { item: WallItem; prominent?: boolean }) {
@@ -117,7 +138,7 @@ function IllustrationScene({ item }: { item: WallItem }) {
     <article className="live-wall-illustration relative grid h-full grid-cols-2 overflow-hidden rounded-[clamp(1.5rem,2.5vw,3rem)] bg-black shadow-[0_35px_120px_rgba(0,0,0,.5)]">
       <div className="relative overflow-hidden"><Media item={item} /><span className="absolute bottom-6 left-6 rounded-full bg-black/45 px-4 py-2 text-sm font-semibold backdrop-blur">הרגע</span></div>
       <div className="live-wall-illustration-reveal relative overflow-hidden">
-        <SafeImage src={item.illustrationUrl} alt="גרסה מאוירת של הרגע" />
+        <SmartCropImage src={item.illustrationUrl} alt="גרסה מאוירת של הרגע" />
         <span className="absolute bottom-6 right-6 rounded-full bg-[#fffaf0]/90 px-4 py-2 text-sm font-bold text-[#1d1b18]">הרגע המאויר ✦</span>
       </div>
       <div className="absolute inset-y-0 left-1/2 z-10 w-px bg-white/65 shadow-[0_0_35px_white]" />
