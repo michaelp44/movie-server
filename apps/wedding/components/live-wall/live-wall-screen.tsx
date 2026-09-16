@@ -18,13 +18,22 @@ function uniqueFrame(queue: WallItem[], all: WallItem[], count = FRAME_SIZE): Wa
   }).slice(0, count);
 }
 
-function Media({ item, className = "" }: { item: WallItem; className?: string }) {
-  if (!item.mediaUrl) return null;
+function SafeImage({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
   return (
-    // Private signed URLs cannot use the public Next image optimizer.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={item.mediaUrl} alt="רגע מהחתונה" className={`live-wall-photo absolute inset-0 size-full object-cover ${className}`} />
+    <>
+      {/* A blurred duplicate fills mismatched aspect ratios while the foreground always keeps the entire photo visible. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt="" aria-hidden="true" className="live-wall-photo-backdrop" />
+      <span className="absolute inset-0 bg-black/10" aria-hidden="true" />
+      {/* Private signed URLs cannot use the public Next image optimizer. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} className={`live-wall-photo-safe ${className}`} />
+    </>
   );
+}
+
+function Media({ item, className = "" }: { item: WallItem; className?: string }) {
+  return item.mediaUrl ? <SafeImage src={item.mediaUrl} alt="רגע מהחתונה" className={className} /> : null;
 }
 
 function PhotoCaption({ item, prominent = false }: { item: WallItem; prominent?: boolean }) {
@@ -108,9 +117,7 @@ function IllustrationScene({ item }: { item: WallItem }) {
     <article className="live-wall-illustration relative grid h-full grid-cols-2 overflow-hidden rounded-[clamp(1.5rem,2.5vw,3rem)] bg-black shadow-[0_35px_120px_rgba(0,0,0,.5)]">
       <div className="relative overflow-hidden"><Media item={item} /><span className="absolute bottom-6 left-6 rounded-full bg-black/45 px-4 py-2 text-sm font-semibold backdrop-blur">הרגע</span></div>
       <div className="live-wall-illustration-reveal relative overflow-hidden">
-        {/* Private generated asset is also delivered through a signed URL. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={item.illustrationUrl} alt="גרסה מאוירת של הרגע" className="absolute inset-0 size-full object-cover" />
+        <SafeImage src={item.illustrationUrl} alt="גרסה מאוירת של הרגע" />
         <span className="absolute bottom-6 right-6 rounded-full bg-[#fffaf0]/90 px-4 py-2 text-sm font-bold text-[#1d1b18]">הרגע המאויר ✦</span>
       </div>
       <div className="absolute inset-y-0 left-1/2 z-10 w-px bg-white/65 shadow-[0_0_35px_white]" />

@@ -117,7 +117,23 @@ a {
 .animate-wall-reveal { animation: wall-reveal 1.2s cubic-bezier(.22,1,.36,1) both; }
 .animate-float-reaction { animation: float-reaction 3.2s ease-out both; }
 .live-wall-card { animation: wall-card-enter 1.1s cubic-bezier(.22,1,.36,1) both; }
-.live-wall-photo { animation: wall-photo-drift 14s ease-in-out alternate infinite; }
+.live-wall-photo-backdrop {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  max-width: none;
+  object-fit: cover;
+  filter: blur(28px) brightness(.58) saturate(1.2);
+  animation: wall-photo-drift 14s ease-in-out alternate infinite;
+}
+.live-wall-photo-safe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 .live-wall-premiere-badge { animation: wall-premiere 1.1s cubic-bezier(.22,1,.36,1) both; }
 .live-wall-quote { animation: wall-quote-breathe 7s ease-in-out infinite; }
 .live-wall-illustration-reveal { animation: wall-illustration-reveal 2.8s .7s cubic-bezier(.22,1,.36,1) both; }
