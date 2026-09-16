@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LiveWallPayload } from "@/lib/live-wall/data";
 import { buildWallQueue, type WallItem } from "@/lib/live-wall/queue";
 import { detectPhotoFaces } from "@/lib/live-wall/face-detection";
-import { faceCropPosition } from "@/lib/live-wall/face-crop";
+import { centeredFaceCrop, faceCropPosition } from "@/lib/live-wall/face-crop";
 
 const CALM_ROTATION_MS = 11_000;
 const PARTY_ROTATION_MS = 8_500;
@@ -23,18 +23,23 @@ function uniqueFrame(queue: WallItem[], all: WallItem[], count = FRAME_SIZE): Wa
 function SmartCropImage({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
   const imageRef = useRef<HTMLImageElement>(null);
   const [objectPosition, setObjectPosition] = useState("50% 35%");
+  const [crop, setCrop] = useState<ReturnType<typeof centeredFaceCrop>>(null);
   useEffect(() => {
     const image = imageRef.current;
-    if (!image) return;
+    const card = image?.parentElement;
+    if (!image || !card) return;
     let active = true;
     const update = async () => {
       if (!image.complete || !image.naturalWidth) return;
       const faces = await detectPhotoFaces(image);
-      if (active) setObjectPosition(faceCropPosition(image.naturalWidth, image.naturalHeight, image.clientWidth, image.clientHeight, faces));
+      if (active) {
+        setObjectPosition(faceCropPosition(image.naturalWidth, image.naturalHeight, card.clientWidth, card.clientHeight, faces));
+        setCrop(centeredFaceCrop(image.naturalWidth, image.naturalHeight, card.clientWidth, card.clientHeight, faces));
+      }
     };
     image.addEventListener("load", update);
     const observer = new ResizeObserver(() => void update());
-    observer.observe(image);
+    observer.observe(card);
     void update();
     return () => { active = false; observer.disconnect(); image.removeEventListener("load", update); };
   }, [src]);
@@ -48,7 +53,7 @@ function SmartCropImage({ src, alt, className = "" }: { src: string; alt: string
       alt={alt}
       crossOrigin="anonymous"
       className={`live-wall-photo-smart ${className}`}
-      style={{ objectPosition }}
+      style={{ objectPosition, ...crop }}
     />
   );
 }

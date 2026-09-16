@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { faceCropPosition } from "../lib/live-wall/face-crop";
+import { centeredFaceCrop, faceCropPosition } from "../lib/live-wall/face-crop";
 
 describe("face-aware cover crop", () => {
+  it("adds bounded zoom to center faces that were pinned near the top", () => {
+    const crop = centeredFaceCrop(1000, 1000, 1000, 500, [{ x: 400, y: 100, width: 200, height: 200 }])!;
+    const faceY = 200 * parseFloat(crop.height) / 100 * 0.5 + parseFloat(crop.top) / 100 * 500;
+    expect(faceY).toBeCloseTo(250);
+    expect(parseFloat(crop.width)).toBe(125);
+  });
+  it("keeps all group faces in view instead of zooming them out of frame", () => {
+    const crop = centeredFaceCrop(1000, 1000, 1000, 500, [{ x: 20, y: 100, width: 960, height: 100 }])!;
+    expect(parseFloat(crop.width)).toBe(100);
+  });
   it("moves a wide portrait crop to the heads rather than the torso", () => {
     const position = faceCropPosition(1000, 2000, 1000, 400, [{ x: 400, y: 200, width: 200, height: 200 }]);
     expect(position).toBe("50% 6.25%");

@@ -1,5 +1,32 @@
 export type FaceBox = { x: number; y: number; width: number; height: number };
 
+/** A small extra zoom makes room to center faces near the source edges. */
+export function centeredFaceCrop(width: number, height: number, cardWidth: number, cardHeight: number, faces: FaceBox[]) {
+  if (!width || !height || !cardWidth || !cardHeight || !faces.length) return null;
+  const left = Math.min(...faces.map((face) => face.x));
+  const right = Math.max(...faces.map((face) => face.x + face.width));
+  const top = Math.min(...faces.map((face) => face.y));
+  const bottom = Math.max(...faces.map((face) => face.y + face.height));
+  const x = (left + right) / 2;
+  const y = (top + bottom) / 2;
+  const base = Math.max(cardWidth / width, cardHeight / height);
+  const needed = Math.max(base, cardWidth / (2 * Math.max(1, Math.min(x, width - x))), cardHeight / (2 * Math.max(1, Math.min(y, height - y))));
+  // Preserve the group and some breathing room; never zoom arbitrarily far.
+  const groupLimit = Math.min(cardWidth / ((right - left) * 1.2), cardHeight / ((bottom - top) * 1.2));
+  const scale = Math.max(base, Math.min(needed, base * 1.6, groupLimit));
+  const renderedWidth = width * scale;
+  const renderedHeight = height * scale;
+  return {
+    width: `${renderedWidth / cardWidth * 100}%`,
+    height: `${renderedHeight / cardHeight * 100}%`,
+    left: `${Math.max(cardWidth - renderedWidth, Math.min(0, cardWidth / 2 - x * scale)) / cardWidth * 100}%`,
+    top: `${Math.max(cardHeight - renderedHeight, Math.min(0, cardHeight / 2 - y * scale)) / cardHeight * 100}%`,
+    maxWidth: "none",
+    right: "auto",
+    bottom: "auto",
+  };
+}
+
 /** CSS object-position is relative to overflow, not to the source image. */
 export function faceCropPosition(width: number, height: number, cardWidth: number, cardHeight: number, faces: FaceBox[]): string {
   if (!faces.length || !width || !height || !cardWidth || !cardHeight) return `50% ${height > width * 1.1 ? 28 : 40}%`;
