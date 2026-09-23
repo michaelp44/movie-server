@@ -31,7 +31,7 @@ const links = [
 ];
 
 const mobileLinks = links.filter(({ href }) =>
-  ["/admin", "/admin/guests", "/admin/photos", "/admin/live-wall"].includes(href),
+  ["/admin", "/admin/guests", "/admin/photos", "/admin/live-wall", "/admin/guestbook"].includes(href),
 );
 
 export function AdminShell({ children, email }: { children: ReactNode; email: string }) {
@@ -83,7 +83,7 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
         </aside>
         <main className="min-w-0 px-4 pb-28 pt-6 sm:p-8 lg:p-10">{children}</main>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-black/10 bg-white/95 pb-[max(.35rem,env(safe-area-inset-bottom))] pt-1 shadow-[0_-8px_30px_rgba(0,0,0,.08)] backdrop-blur lg:hidden" aria-label="ניווט ניהול מהיר">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-black/10 bg-white/95 pb-[max(.35rem,env(safe-area-inset-bottom))] pt-1 shadow-[0_-8px_30px_rgba(0,0,0,.08)] backdrop-blur lg:hidden" aria-label="ניווט ניהול מהיר">
         {mobileLinks.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className="flex min-h-14 flex-col items-center justify-center gap-1 px-1 text-[11px] font-semibold text-black/65 active:bg-black/5">
             <Icon className="size-5 text-[#9a7847]" aria-hidden="true" />{label}

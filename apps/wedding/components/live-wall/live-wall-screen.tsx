@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LiveWallPayload } from "@/lib/live-wall/data";
-import { buildWallQueue, type WallItem } from "@/lib/live-wall/queue";
+import { buildWallQueue, nextIllustration, type WallItem } from "@/lib/live-wall/queue";
+import { BlessingQuote } from "./blessing-quote";
 import { detectPhotoFaces } from "@/lib/live-wall/face-detection";
 import { centeredFaceCrop, faceCropPosition } from "@/lib/live-wall/face-crop";
 
@@ -76,10 +77,7 @@ function BlessingCard({ item, compact = false }: { item: WallItem; compact?: boo
   return (
     <article className="live-wall-card relative grid size-full min-h-0 place-items-center overflow-hidden rounded-[clamp(1.3rem,2vw,2.5rem)] border border-white/10 bg-[linear-gradient(145deg,rgba(215,189,145,.2),rgba(255,255,255,.055))] p-[clamp(1.4rem,3vw,4rem)] text-center shadow-[0_28px_90px_rgba(0,0,0,.3)]">
       <span className="absolute -left-8 -top-12 font-serif text-[12rem] leading-none text-white/[.035]">&amp;</span>
-      <blockquote className="relative max-w-[22ch]">
-        <p className={`${compact ? "text-[clamp(1.25rem,2vw,2.4rem)]" : "text-[clamp(2.4rem,4.8vw,6rem)]"} font-serif leading-[1.12] text-[#fffaf0]`}>״{item.message}״</p>
-        {item.displayName ? <footer className="mt-[clamp(1rem,2vw,2rem)] text-[clamp(.85rem,1.3vw,1.35rem)] font-semibold tracking-wide text-[#d7bd91]">— {item.displayName}</footer> : null}
-      </blockquote>
+      <BlessingQuote message={item.message} name={item.displayName} compact={compact} />
     </article>
   );
 }
@@ -103,7 +101,7 @@ function MosaicScene({ items }: { items: WallItem[] }) {
   return (
     <div className="live-wall-mosaic grid h-full grid-cols-12 grid-rows-8 gap-[clamp(.65rem,1vw,1.15rem)]">
       {items.slice(0, 5).map((item, index) => {
-        const placement = ["col-span-5 row-span-5", "col-span-4 row-span-4", "col-span-3 row-span-5", "col-span-7 row-span-3", "col-span-5 row-span-3"][index];
+        const placement = ["col-span-5 row-span-5", "col-span-4 row-span-5", "col-span-3 row-span-5", "col-span-7 row-span-3", "col-span-5 row-span-3"][index];
         return item.mediaUrl ? <article key={item.id} className={`live-wall-card relative overflow-hidden rounded-[clamp(1rem,1.7vw,2rem)] ${placement}`} style={{ animationDelay: `${index * 110}ms` }}><Media item={item} /><div className="absolute inset-0 ring-1 ring-inset ring-white/10" />{index < 2 ? <PhotoCaption item={item} /> : null}</article>
           : <div key={item.id} className={placement}><BlessingCard item={item} compact /></div>;
       })}
@@ -128,11 +126,9 @@ function BlessingScene({ blessing, photos }: { blessing: WallItem; photos: WallI
     <div className="relative grid h-full place-items-center overflow-hidden rounded-[clamp(1.5rem,2.5vw,3rem)] border border-white/10 bg-[#211d17]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(215,189,145,.26),transparent_52%)] opacity-35" />
       {photos.slice(0, 4).map((photo, index) => <div key={photo.id} className={`live-wall-polaroid absolute hidden overflow-hidden rounded-2xl border-[.45rem] border-[#f8f1e5] bg-[#f8f1e5] shadow-2xl lg:block live-wall-polaroid-${index + 1}`}><Media item={photo} /></div>)}
-      <blockquote className="live-wall-quote relative z-10 max-w-[20ch] px-[clamp(2rem,12vw,13rem)] text-center">
-        <span className="font-serif text-[clamp(3rem,6vw,7rem)] leading-none text-[#d7bd91]/60">״</span>
-        <p className="font-serif text-[clamp(2.5rem,5vw,6.2rem)] leading-[1.08] text-[#fffaf0]">{blessing.message}</p>
-        {blessing.displayName ? <footer className="mt-[clamp(1.5rem,2.5vw,2.8rem)] text-[clamp(1rem,1.5vw,1.6rem)] font-semibold tracking-wide text-[#d7bd91]">— {blessing.displayName}</footer> : null}
-      </blockquote>
+      <div className="live-wall-quote relative z-10 h-[80%] w-[85%] lg:w-[54%]">
+        <BlessingQuote message={blessing.message} name={blessing.displayName} />
+      </div>
     </div>
   );
 }
@@ -167,6 +163,7 @@ export function LiveWallScreen({ initial, demo = false }: { initial: LiveWallPay
   const premiereActive = useRef(false);
   const premiereTimer = useRef<number | null>(null);
   const advanceRef = useRef<() => void>(() => undefined);
+  const illustrationHistory = useRef<string[]>([]);
 
   const queue = useMemo(() => buildWallQueue(payload.items, history), [payload.items, history]);
   const advance = useCallback(() => {
@@ -183,7 +180,8 @@ export function LiveWallScreen({ initial, demo = false }: { initial: LiveWallPay
       next.unshift(favorite);
     } else if (nextNumber % 8 === 0 && illustrated.length) {
       nextScene = "illustration";
-      const illustratedItem = illustrated.find((item) => !history.slice(-8).includes(item.id)) ?? illustrated[0]!;
+      const illustratedItem = nextIllustration(illustrated, illustrationHistory.current)!;
+      illustrationHistory.current = [...illustrationHistory.current.slice(-99), illustratedItem.id];
       next.unshift(illustratedItem);
     } else if (nextNumber % 6 === 0 && blessings.length) nextScene = "blessing";
     else if (nextNumber % 4 === 0 && photos.length) nextScene = "spotlight";
@@ -192,7 +190,7 @@ export function LiveWallScreen({ initial, demo = false }: { initial: LiveWallPay
     setSceneNumber(nextNumber);
     setVisible(uniqueFrame(next, payload.items));
     if (next.length) setHistory((value) => [...value.slice(-14), ...next.map((item) => item.id)]);
-  }, [history, payload.controls.blank, payload.controls.paused, payload.items, queue, sceneNumber]);
+  }, [payload.controls.blank, payload.controls.paused, payload.items, queue, sceneNumber]);
   useEffect(() => { advanceRef.current = advance; }, [advance]);
 
   useEffect(() => {

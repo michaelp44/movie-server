@@ -9,6 +9,10 @@ export type WallItem = {
   createdAt: string;
 };
 
+export function nextIllustration(items: WallItem[], history: string[]): WallItem | undefined {
+  return items.filter((item) => item.illustrationUrl).sort((a, b) => history.lastIndexOf(a.id) - history.lastIndexOf(b.id))[0];
+}
+
 export function buildWallQueue(items: WallItem[], previousIds: string[] = []): WallItem[] {
   const recent = new Set(previousIds.slice(-5));
   const fresh = items.filter((item) => !recent.has(item.id));

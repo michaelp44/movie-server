@@ -37,7 +37,7 @@ function mergePayloads(primary: LiveWallPayload, secondary: LiveWallPayload | nu
   for (const reaction of secondary.reactions) if (!reactions.has(reaction.id)) reactions.set(reaction.id, reaction);
   return {
     ...primary,
-    items: [...items.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 48),
+    items: [...items.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).filter((item, index) => index < 48 || (Boolean(item.illustrationUrl) && primary.items.some((entry) => entry.id === item.id))),
     stats: {
       photos: Math.max(primary.stats.photos, secondary.stats.photos),
       blessings: Math.max(primary.stats.blessings, secondary.stats.blessings),
@@ -62,19 +62,22 @@ export async function getLiveWallPayload(): Promise<LiveWallPayload> {
       })
     : Promise.resolve(null);
   try {
-  const [settingsResult, photosResult, blessingsResult, photoCount, blessingCount, reactionsResult] = await Promise.all([
+  const [settingsResult, photosResult, blessingsResult, photoCount, blessingCount, reactionsResult, artResult] = await Promise.all([
     db.from("site_settings").select("key, value").in("key", ["live_wall_enabled", "live_wall_paused", "live_wall_blank"]),
     db.from("photo_uploads").select("id, uploader_name, storage_path, illustration_path, message, created_at").eq("upload_completed", true).eq("moderation_status", "APPROVED").is("hidden_at", null).order("approved_at", { ascending: false }).limit(24),
     db.from("guestbook_messages").select("id, display_name, message, created_at").eq("moderation_status", "APPROVED").is("hidden_at", null).order("approved_at", { ascending: false }).limit(24),
     db.from("photo_uploads").select("id", { count: "exact", head: true }).eq("upload_completed", true),
     db.from("guestbook_messages").select("id", { count: "exact", head: true }),
     db.from("live_wall_reactions").select("id, emoji, created_at").gte("created_at", new Date(Date.now() - 30_000).toISOString()).order("created_at", { ascending: true }).limit(30),
+    db.from("photo_uploads").select("id, uploader_name, storage_path, illustration_path, message, created_at").eq("upload_completed", true).eq("moderation_status", "APPROVED").eq("illustration_status", "READY").is("hidden_at", null).order("illustration_created_at", { ascending: false }).limit(6),
   ]);
-  const paths = (photosResult.data ?? []).map((row) => row.storage_path);
-  const illustrationRows = (photosResult.data ?? []).filter((row) => row.illustration_path);
+  // Keep an illustration pool even when a burst of uploads replaces the newest photos.
+  const photoRows = [...new Map([...(photosResult.data ?? []), ...(artResult.data ?? [])].map((row) => [row.id, row])).values()];
+  const paths = photoRows.map((row) => row.storage_path);
+  const illustrationRows = photoRows.filter((row) => row.illustration_path);
   const anyError = [settingsResult.error, photosResult.error, blessingsResult.error, photoCount.error, blessingCount.error, reactionsResult.error].find(Boolean);
   if (anyError) throw anyError;
-  const photoIds = (photosResult.data ?? []).map((row) => row.id);
+  const photoIds = photoRows.map((row) => row.id);
   const { data: likes, error: likesError } = photoIds.length
     ? await db.from("photo_likes").select("photo_id").in("photo_id", photoIds).limit(10_000)
     : { data: [], error: null };
@@ -86,7 +89,7 @@ export async function getLiveWallPayload(): Promise<LiveWallPayload> {
     ? await db.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(illustrationRows.map((row) => row.illustration_path!), 15 * 60)
     : { data: [] };
   const illustrationUrls = new Map(illustrationRows.map((row, index) => [row.id, signedIllustrations.data?.[index]?.signedUrl ?? null]));
-  const photos: WallItem[] = (photosResult.data ?? []).flatMap((row, index) => {
+  const photos: WallItem[] = photoRows.flatMap((row, index) => {
     const mediaUrl = signed.data?.[index]?.signedUrl;
     return mediaUrl ? [{ id: `photo:${row.id}`, kind: row.message ? "photo_blessing" : "photo", displayName: row.uploader_name, message: row.message, mediaUrl, illustrationUrl: illustrationUrls.get(row.id) ?? null, likeCount: likeCounts.get(row.id) ?? 0, createdAt: row.created_at }] : [];
   });

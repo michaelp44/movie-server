@@ -39,20 +39,27 @@ export async function maybeGenerateLiveWallIllustration(): Promise<void> {
     await db.from("photo_uploads").update({ illustration_status: "FAILED" }).eq("id", running.id).eq("illustration_status", "GENERATING");
   }
 
+  // Start with a small varied pool, then retain the one-in-five selection budget.
+  const { count: readyCount, error: poolError } = await db.from("photo_uploads")
+    .select("id", { count: "exact", head: true })
+    .eq("illustration_status", "READY").eq("moderation_status", "APPROVED").is("hidden_at", null);
+  if (poolError) throw poolError;
+  const needsVariety = (readyCount ?? 0) < 3;
   const { data: candidate, error: candidateError } = await db
     .from("photo_uploads")
-    .select("id, storage_path, mime_type")
+    .select("id, storage_path, mime_type, illustration_status")
     .eq("upload_completed", true)
     .eq("moderation_status", "APPROVED")
     .eq("media_kind", "image")
-    .eq("illustration_status", "PENDING")
+    .is("hidden_at", null)
+    .in("illustration_status", needsVariety ? ["PENDING", "SKIPPED"] : ["PENDING"])
     .order("approved_at", { ascending: true })
     .limit(1)
     .maybeSingle();
   if (candidateError) throw candidateError;
   if (!candidate) return;
 
-  if (!selectedForIllustration(candidate.id)) {
+  if (!needsVariety && !selectedForIllustration(candidate.id)) {
     await db.from("photo_uploads").update({ illustration_status: "SKIPPED" }).eq("id", candidate.id).eq("illustration_status", "PENDING");
     return;
   }
@@ -61,7 +68,7 @@ export async function maybeGenerateLiveWallIllustration(): Promise<void> {
     .from("photo_uploads")
     .update({ illustration_status: "GENERATING", illustration_created_at: new Date().toISOString() })
     .eq("id", candidate.id)
-    .eq("illustration_status", "PENDING")
+    .eq("illustration_status", candidate.illustration_status)
     .select("id")
     .maybeSingle();
   if (claimError) throw claimError;

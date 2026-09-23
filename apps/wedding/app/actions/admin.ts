@@ -260,6 +260,7 @@ export async function moderateLiveWallAction(formData: FormData): Promise<void> 
   }
   if (isFallbackConfigured()) await fallbackRequest("/v1/moderation", { method: "POST", body: { id, action } }).catch((mirrorError) => console.error("Fallback Live Wall moderation mirror failed", mirrorError));
   revalidatePath("/admin/live-wall");
+  revalidatePath("/admin/guestbook");
   revalidatePath("/live");
 }
 
