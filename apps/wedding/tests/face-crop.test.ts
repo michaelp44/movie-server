@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { centeredFaceCrop, faceCropPosition } from "../lib/live-wall/face-crop";
+import { centeredFaceCrop, faceCropPosition, relevantFaces } from "../lib/live-wall/face-crop";
 
 describe("face-aware cover crop", () => {
   it("adds bounded zoom to center faces that were pinned near the top", () => {
@@ -26,6 +26,23 @@ describe("face-aware cover crop", () => {
     expect(faceCropPosition(1000, 2000, 1000, 400, [{ x: 0, y: 0, width: 80, height: 80 }])).toBe("50% 0%");
   });
   it("uses a portrait fallback if faces are undetected", () => {
-    expect(faceCropPosition(1000, 2000, 1000, 400, [])).toBe("50% 28%");
+    expect(faceCropPosition(1000, 2000, 1000, 400, [])).toBe("50% 10%");
+  });
+  it("ignores false detections on clothing below real faces in portrait photos", () => {
+    const faces = relevantFaces(2880, 5120, [
+      { x: 850, y: 620, width: 380, height: 380, score: 0.96 },
+      { x: 1500, y: 500, width: 430, height: 430, score: 0.94 },
+      { x: 900, y: 3100, width: 520, height: 520, score: 0.87 },
+    ]);
+    expect(faces).toHaveLength(2);
+    expect(Math.max(...faces.map((face) => face.y))).toBe(620);
+  });
+  it("drops overlapping tile duplicates and weak detections", () => {
+    const faces = relevantFaces(1200, 1800, [
+      { x: 300, y: 200, width: 250, height: 250, score: 0.95 },
+      { x: 310, y: 210, width: 245, height: 245, score: 0.91 },
+      { x: 800, y: 900, width: 200, height: 200, score: 0.42 },
+    ]);
+    expect(faces).toEqual([{ x: 300, y: 200, width: 250, height: 250, score: 0.95 }]);
   });
 });

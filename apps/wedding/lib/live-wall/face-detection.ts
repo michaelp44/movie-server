@@ -30,9 +30,10 @@ export function detectPhotoFaces(image: HTMLImageElement): Promise<FaceBox[]> {
     const context = canvas.getContext("2d");
     if (!context || !canvas.width || !canvas.height) return [];
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const boxes = engine.detect(canvas).detections.flatMap(({ boundingBox: box }) => box ? [{
+    const boxes = engine.detect(canvas).detections.flatMap(({ boundingBox: box, categories }) => box ? [{
       x: box.originX / scale, y: box.originY / scale,
       width: box.width / scale, height: box.height / scale,
+      score: categories[0]?.score ?? 0,
     }] : []);
     // Overlapping tiles find small faces in groups that a whole-image pass misses.
     const tile = document.createElement("canvas");
@@ -43,9 +44,10 @@ export function detectPhotoFaces(image: HTMLImageElement): Promise<FaceBox[]> {
       const left = x * (image.naturalWidth - side);
       const top = y * (image.naturalHeight - side);
       tileContext.drawImage(image, left, top, side, side, 0, 0, 320, 320);
-      for (const { boundingBox: box } of engine.detect(tile).detections) if (box) boxes.push({
+      for (const { boundingBox: box, categories } of engine.detect(tile).detections) if (box) boxes.push({
         x: left + box.originX * side / 320, y: top + box.originY * side / 320,
         width: box.width * side / 320, height: box.height * side / 320,
+        score: categories[0]?.score ?? 0,
       });
       // Let the wall paint between passes; this is done once per cached photo.
       await new Promise((resolve) => setTimeout(resolve, 0));

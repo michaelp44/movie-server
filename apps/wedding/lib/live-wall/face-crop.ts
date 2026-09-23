@@ -1,7 +1,25 @@
-export type FaceBox = { x: number; y: number; width: number; height: number };
+export type FaceBox = { x: number; y: number; width: number; height: number; score?: number };
+
+function overlap(a: FaceBox, b: FaceBox): number {
+  const width = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+  const height = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+  const intersection = width * height;
+  return intersection / Math.max(1, a.width * a.height + b.width * b.height - intersection);
+}
+
+export function relevantFaces(width: number, height: number, faces: FaceBox[]): FaceBox[] {
+  const credible = faces
+    .filter((face) => (face.score ?? 1) >= 0.58 && face.width > 0 && face.height > 0)
+    .sort((a, b) => (b.score ?? 1) - (a.score ?? 1))
+    .filter((face, index, all) => !all.slice(0, index).some((kept) => overlap(face, kept) > 0.35));
+  if (height <= width * 1.2) return credible;
+  const upperFaces = credible.filter((face) => face.y + face.height / 2 < height * 0.55);
+  return upperFaces.length ? upperFaces : credible;
+}
 
 /** A small extra zoom makes room to center faces near the source edges. */
 export function centeredFaceCrop(width: number, height: number, cardWidth: number, cardHeight: number, faces: FaceBox[]) {
+  faces = relevantFaces(width, height, faces);
   if (!width || !height || !cardWidth || !cardHeight || !faces.length) return null;
   const left = Math.min(...faces.map((face) => face.x));
   const right = Math.max(...faces.map((face) => face.x + face.width));
@@ -29,7 +47,8 @@ export function centeredFaceCrop(width: number, height: number, cardWidth: numbe
 
 /** CSS object-position is relative to overflow, not to the source image. */
 export function faceCropPosition(width: number, height: number, cardWidth: number, cardHeight: number, faces: FaceBox[]): string {
-  if (!faces.length || !width || !height || !cardWidth || !cardHeight) return `50% ${height > width * 1.1 ? 28 : 40}%`;
+  faces = relevantFaces(width, height, faces);
+  if (!faces.length || !width || !height || !cardWidth || !cardHeight) return `50% ${height > width * 1.1 ? 10 : 40}%`;
   const scale = Math.max(cardWidth / width, cardHeight / height);
   const left = Math.min(...faces.map((face) => face.x));
   const right = Math.max(...faces.map((face) => face.x + face.width));

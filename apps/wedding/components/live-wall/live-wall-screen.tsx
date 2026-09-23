@@ -23,7 +23,7 @@ function uniqueFrame(queue: WallItem[], all: WallItem[], count = FRAME_SIZE): Wa
 
 function SmartCropImage({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
   const imageRef = useRef<HTMLImageElement>(null);
-  const [objectPosition, setObjectPosition] = useState("50% 35%");
+  const [objectPosition, setObjectPosition] = useState("50% 10%");
   const [crop, setCrop] = useState<ReturnType<typeof centeredFaceCrop>>(null);
   useEffect(() => {
     const image = imageRef.current;
