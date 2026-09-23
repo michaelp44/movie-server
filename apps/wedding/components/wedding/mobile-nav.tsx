@@ -69,7 +69,7 @@ export function MobileNav() {
   return (
     <>
       {open ? (
-        <div className="fixed inset-0 z-40 lg:hidden" role="presentation">
+        <div className="fixed inset-0 z-[35] lg:hidden" role="presentation">
           <button
             type="button"
             aria-label="סגירת התפריט"
@@ -81,7 +81,7 @@ export function MobileNav() {
             role="dialog"
             aria-modal="true"
             aria-label="אפשרויות נוספות"
-            className="absolute inset-x-3 bottom-[calc(5.4rem+env(safe-area-inset-bottom))] rounded-[2rem] border border-white/70 bg-[#fbf8f1] p-4 shadow-[0_28px_90px_rgba(28,24,18,0.28)]"
+            className="absolute inset-x-3 top-[8.75rem] rounded-[2rem] border border-white/70 bg-[#fbf8f1] p-4 shadow-[0_28px_90px_rgba(28,24,18,0.28)]"
           >
             <div className="mb-3 flex items-center justify-between px-2">
               <div>
@@ -132,9 +132,9 @@ export function MobileNav() {
 
       <nav
         aria-label="ניווט מהיר"
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-900/10 bg-[#fbf8f1]/95 px-2 pt-2 shadow-[0_-12px_40px_rgba(28,24,18,0.08)] backdrop-blur-xl [padding-bottom:max(.5rem,env(safe-area-inset-bottom))] lg:hidden"
+        className="sticky top-16 z-40 border-b border-stone-900/10 bg-[#fbf8f1]/96 px-1 shadow-[0_10px_30px_rgba(28,24,18,0.07)] backdrop-blur-xl lg:hidden"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-5">
+        <div className="mx-auto grid max-w-lg grid-cols-5 divide-x divide-x-reverse divide-stone-900/8">
           {primaryItems.map((item) => {
             const Icon = item.icon;
             const active = pathIsActive(pathname, item.href);
@@ -144,8 +144,8 @@ export function MobileNav() {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium transition ${
-                  active ? "text-[#856333]" : "text-stone-500 hover:text-stone-900"
+                className={`relative flex min-h-[4.6rem] flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition ${
+                  active ? "bg-white/55 text-[#856333] after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-[#a9854f]" : "text-stone-500 hover:bg-white/40 hover:text-stone-900"
                 }`}
               >
                 <Icon aria-hidden="true" size={20} strokeWidth={active ? 2.1 : 1.6} />
@@ -159,8 +159,8 @@ export function MobileNav() {
             aria-expanded={open}
             aria-controls="mobile-more-menu"
             onClick={() => setOpen((value) => !value)}
-            className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium transition ${
-              open || moreIsActive ? "text-[#856333]" : "text-stone-500 hover:text-stone-900"
+            className={`relative flex min-h-[4.6rem] flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition ${
+              open || moreIsActive ? "bg-white/55 text-[#856333] after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-[#a9854f]" : "text-stone-500 hover:bg-white/40 hover:text-stone-900"
             }`}
           >
             <span className="flex h-5 items-center" aria-hidden="true">

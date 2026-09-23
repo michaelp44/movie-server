@@ -11,7 +11,8 @@ export function UnidentifiedHome({ guestIdentificationEnabled }: { guestIdentifi
   return (
     <div className="min-h-screen bg-[#f6f2e9]">
       <SiteHeader />
-      <main className="overflow-hidden bg-[#f6f2e9] pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
+      <MobileNav />
+      <main className="overflow-hidden bg-[#f6f2e9] lg:pb-0">
       <section className="mx-auto grid min-h-[100svh] max-w-[1600px] lg:grid-cols-[1.05fr_0.95fr]">
         <div className="relative min-h-[52svh] overflow-hidden bg-[#c9baa2] lg:order-2 lg:min-h-screen">
           <Image src={heroImage} alt="שובל ומיכאל חוגגים יחד במסיבה בחוץ" fill priority quality={88} sizes="(max-width: 1023px) 100vw, 53vw" className="object-cover object-[58%_55%] lg:object-[54%_55%]" />
@@ -43,7 +44,6 @@ export function UnidentifiedHome({ guestIdentificationEnabled }: { guestIdentifi
         <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-stone-600">אחרי הזדהות קצרה תוכלו לראות את ההזמנה האישית, השולחן, הניווט, התפריט והלו״ז — ולהעלות אלינו את הרגעים שלכם.</p>
       </section>
       </main>
-      <MobileNav />
     </div>
   );
 }

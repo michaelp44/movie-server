@@ -22,7 +22,8 @@ export function PageShell({
   return (
     <div className="min-h-screen bg-[#f6f2e9] text-stone-950">
       <SiteHeader />
-      <main className="overflow-hidden pb-[calc(6.25rem+env(safe-area-inset-bottom))] lg:pb-16">
+      <MobileNav />
+      <main className="overflow-hidden pb-16">
         <header className="relative border-b border-stone-900/8 px-5 py-14 sm:px-8 sm:py-20 lg:py-24">
           <div
             aria-hidden="true"
@@ -44,7 +45,6 @@ export function PageShell({
           {children}
         </div>
       </main>
-      <MobileNav />
     </div>
   );
 }

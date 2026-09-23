@@ -25,7 +25,8 @@ export function PersonalizedHome({ invitation, seatingPublished }: { invitation:
   return (
     <div className="min-h-screen bg-[#f6f2e9]">
       <SiteHeader />
-      <main className="overflow-hidden bg-[#f6f2e9] pb-[calc(6.25rem+env(safe-area-inset-bottom))] lg:pb-24">
+      <MobileNav />
+      <main className="overflow-hidden bg-[#f6f2e9] pb-16 lg:pb-24">
       <section className="relative min-h-[74svh] overflow-hidden">
         <Image src={heroImage} alt="שובל ומיכאל חוגגים יחד במסיבה בחוץ" fill priority quality={88} sizes="100vw" className="object-cover object-[58%_55%] sm:object-[54%_55%]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/25" />
@@ -77,7 +78,6 @@ export function PersonalizedHome({ invitation, seatingPublished }: { invitation:
         </form>
       </div>
       </main>
-      <MobileNav />
     </div>
   );
 }
