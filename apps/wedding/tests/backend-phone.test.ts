@@ -30,6 +30,7 @@ describe("normalizeIsraeliPhone", () => {
     ["+1 (336) 312-5549", "+13363125549"],
     ["004917662159796", "+4917662159796"],
     ["+41783021929", "+41783021929"],
+    ["33612283315", "+33612283315"],
   ])("normalizes international number %s", (input, expected) => {
     expect(normalizeIsraeliPhone(input)).toBe(expected);
   });

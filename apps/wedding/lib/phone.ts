@@ -30,7 +30,10 @@ export function normalizeIsraeliPhone(input: string): string | null {
   // Preserve support for Israeli numbers entered without the country code.
   if (!explicitInternational && digits.startsWith("0")) digits = digits.slice(1);
   else if (!explicitInternational && digits.startsWith("972")) digits = digits.slice(3);
-  else if (!explicitInternational && !/^[57]\d{8}$/.test(digits)) {
+  else if (!explicitInternational && /^[1-9]\d{10,14}$/.test(digits)) {
+    // A few Sheets cells contain an E.164 number as digits without the leading plus.
+    return `+${digits}`;
+  } else if (!explicitInternational && !/^[57]\d{8}$/.test(digits)) {
     // Sheets may drop the leading zero from an Israeli mobile number.
     return null;
   }
