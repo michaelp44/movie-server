@@ -103,6 +103,18 @@ export const config = {
     topic: optionalEnv('NTFY_TOPIC', ''),
     accessToken: optionalEnv('NTFY_ACCESS_TOKEN', ''),
   },
+
+  // Email for Kindle ebooks
+  email: {
+    enabled: optionalEnvBoolean('EMAIL_ENABLED', false),
+    smtpHost: optionalEnv('SMTP_HOST', 'smtp.gmail.com'),
+    smtpPort: optionalEnvNumber('SMTP_PORT', 587),
+    smtpSecure: optionalEnvBoolean('SMTP_SECURE', false),
+    smtpUser: optionalEnv('SMTP_USER', ''),
+    smtpPassword: optionalEnv('SMTP_PASSWORD', ''),
+    fromEmail: optionalEnv('EMAIL_FROM', ''),
+    kindleEmail: optionalEnv('KINDLE_EMAIL', 'mm19924@kindle.com'),
+  },
 } as const;
 
 export type Config = typeof config;

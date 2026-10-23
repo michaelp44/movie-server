@@ -4,6 +4,7 @@ import { qbittorrentService } from './qbittorrent.service.js';
 import { wsService } from './websocket.service.js';
 import { mediaServerService } from './media-server.service.js';
 import { ntfyService } from './ntfy.service.js';
+import { emailService } from './email.service.js';
 import { checkAndCleanupStorage } from './storage.service.js';
 import { createPlexCompatibleAudioCopy } from './media-compatibility.service.js';
 import {
@@ -15,7 +16,7 @@ import {
   updateDownloadName,
 } from './download.service.js';
 import { getUserById } from './user.service.js';
-import { addLibraryFile } from './library.service.js';
+import { addLibraryFile, getAbsoluteFilePath } from './library.service.js';
 import { join, extname, dirname, basename } from 'path';
 import { existsSync, renameSync } from 'fs';
 
@@ -142,7 +143,7 @@ async function pollQBittorrent(): Promise<void> {
           setDownloadSavePath(download.id, torrent.save_path);
           wsService.sendDownloadCompleted(download.id);
 
-          // Get files info before deleting
+          // Get files info before deleting, then register media and email ebooks.
           const files = await qbittorrentService.getTorrentFiles(qbHash);
 
           // Remove torrent from qBittorrent (keep files) to release locks
@@ -188,7 +189,15 @@ async function pollQBittorrent(): Promise<void> {
                   ? (await createPlexCompatibleAudioCopy(filePath)).filePath
                   : filePath;
 
-                addLibraryFile(libraryPath, download.id);
+                const libraryFile = addLibraryFile(libraryPath, download.id);
+
+                // Check if file is an ebook and send to Kindle
+                if (emailService.isEbook(file.name)) {
+                  const absolutePath = getAbsoluteFilePath(libraryFile);
+                  emailService.sendEbookToKindle(absolutePath, file.name).catch((error) => {
+                    logger.error({ error, fileName: file.name }, 'Failed to send ebook to Kindle');
+                  });
+                }
               } catch (error) {
                 logger.error({ filePath, error }, 'Failed to add file to library');
               }
