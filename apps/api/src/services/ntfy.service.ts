@@ -1,6 +1,9 @@
 import { config } from '../config.js';
 import { logger } from '../logger.js';
 
+const NTFY_HEALTH_TIMEOUT_MS = 300;
+const NTFY_HEALTH_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /**
  * ntfy.sh push notification service.
  * Sends notifications when downloads complete or fail.
@@ -24,6 +27,7 @@ class NtfyService {
   private topic: string;
   private enabled: boolean;
   private accessToken?: string;
+  private healthCache?: { connected: boolean; expiresAt: number };
 
   constructor() {
     this.serverUrl = config.ntfy.serverUrl;
@@ -47,6 +51,50 @@ class NtfyService {
       return `${this.topic}-${username}`;
     }
     return this.topic;
+  }
+
+  /**
+   * Build an Android ntfy deep link that opens the app and subscribes to the topic.
+   * Format from ntfy docs: ntfy://<host>/<topic>?display=<name>
+   */
+  getSubscribeUrlForUser(username?: string): string | null {
+    if (!this.isEnabled()) {
+      return null;
+    }
+
+    try {
+      const server = new URL(this.serverUrl);
+      const topic = encodeURIComponent(this.getTopicForUser(username));
+      const params = new URLSearchParams({
+        display: 'Movie Server',
+      });
+
+      if (server.protocol === 'http:') {
+        params.set('secure', 'false');
+      }
+
+      return `ntfy://${server.host}/${topic}?${params.toString()}`;
+    } catch (error) {
+      logger.warn({ error, serverUrl: this.serverUrl }, 'Failed to build ntfy subscribe URL');
+      return null;
+    }
+  }
+
+  getWebUrlForUser(username?: string): string | null {
+    if (!this.isEnabled()) {
+      return null;
+    }
+
+    try {
+      const server = new URL(this.serverUrl);
+      server.pathname = `/${encodeURIComponent(this.getTopicForUser(username))}`;
+      server.search = '';
+      server.hash = '';
+      return server.toString();
+    } catch (error) {
+      logger.warn({ error, serverUrl: this.serverUrl }, 'Failed to build ntfy web URL');
+      return null;
+    }
   }
 
   /**
@@ -155,17 +203,31 @@ class NtfyService {
       return { connected: false };
     }
 
+    const now = Date.now();
+    if (this.healthCache && this.healthCache.expiresAt > now) {
+      return { connected: this.healthCache.connected };
+    }
+
     try {
       // ntfy doesn't have a dedicated health endpoint, so we just check if the server responds
       const response = await fetch(`${this.serverUrl}/${this.topic}/json`, {
         method: 'HEAD',
+        signal: AbortSignal.timeout(NTFY_HEALTH_TIMEOUT_MS),
       });
-      return { connected: response.ok || response.status === 405 };
+      const connected = response.ok || response.status === 405;
+      this.healthCache = {
+        connected,
+        expiresAt: now + NTFY_HEALTH_CACHE_TTL_MS,
+      };
+      return { connected };
     } catch {
+      this.healthCache = {
+        connected: false,
+        expiresAt: now + NTFY_HEALTH_CACHE_TTL_MS,
+      };
       return { connected: false };
     }
   }
 }
 
 export const ntfyService = new NtfyService();
-

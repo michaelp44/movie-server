@@ -5,9 +5,16 @@
   "description": "Home server for managing torrent-based downloads with web UI",
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @movie-server/api\" \"npm run dev -w @movie-server/web\"",
-    "build": "npm run build -w @movie-server/shared && npm run build -w @movie-server/api && npm run build -w @movie-server/web",
-    "start": "concurrently -n api,web \"npm run start -w @movie-server/api\" \"npm run start -w @movie-server/web\"",
+    "build": "npm run build -w @movie-server/shared && npm run build -w @movie-server/api && npm run build -w @movie-server/web && npm run build -w @movie-server/whatsapp-agent",
+    "start": "concurrently -n api,web --kill-others \"npm run start -w @movie-server/api\" \"npm run start -w @movie-server/web\"",
     "test": "npm run test -w @movie-server/api",
+    "agent": "npm run start -w @movie-server/whatsapp-agent",
+    "agent:dev": "npm run dev -w @movie-server/whatsapp-agent",
+    "agent:calendar-auth": "npm run calendar:auth -w @movie-server/whatsapp-agent",
+    "agent:sheets-auth": "npm run sheets:auth -w @movie-server/whatsapp-agent",
+    "agent:health": "npm run health -w @movie-server/whatsapp-agent",
+    "agent:test": "npm run test -w @movie-server/whatsapp-agent",
+    "postinstall": "patch-package",
     "lint": "eslint . --ext .ts,.tsx",
     "db:init": "npm run db:init -w @movie-server/api",
     "db:reset": "npm run db:reset -w @movie-server/api",
@@ -19,14 +26,18 @@
     "packages/*",
     "apps/*"
   ],
+  "overrides": {
+    "puppeteer": "25.7.0",
+    "qs": "6.15.3"
+  },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "concurrently": "^8.2.2",
     "eslint": "^8.55.0",
+    "patch-package": "^8.0.1",
     "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=20.0.0"
   }
 }
-

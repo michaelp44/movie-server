@@ -7,12 +7,19 @@ export type AuditAction =
   | 'SIGNUP'
   | 'LOGIN'
   | 'LOGOUT'
+  | 'PASSWORD_CHANGE'
   | 'DOWNLOAD_REQUEST'
   | 'DOWNLOAD_CONFIRM'
   | 'DOWNLOAD_PAUSE'
   | 'DOWNLOAD_RESUME'
   | 'DOWNLOAD_CANCEL'
   | 'DOWNLOAD_DELETE'
+  | 'WANTED_DOWNLOAD_CREATE'
+  | 'WANTED_DOWNLOAD_CHECK'
+  | 'WANTED_DOWNLOAD_CANCEL'
+  | 'ADMIN_USER_DELETE'
+  | 'ADMIN_SIGNUP_SETTING_UPDATE'
+  | 'ADMIN_DOWNLOAD_DELETE'
   | 'FILE_UPLOAD'
   | 'FILE_DOWNLOAD';
 
@@ -70,4 +77,3 @@ export function getAuditLogs(
   
   return { items, total: count };
 }
-

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.movieserver.whatsapp-agent</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/michaelminipc/.nvm/versions/node/v22.22.0/bin/node</string>
+        <string>/Users/michaelminipc/repos/movie-server/apps/whatsapp-agent/dist/index.js</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/michaelminipc/repos/movie-server</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>NODE_ENV</key>
+        <string>production</string>
+        <key>WEDDING_CAMPAIGN_WORKER_ENABLED</key>
+        <string>true</string>
+        <key>WEDDING_CAMPAIGN_WORKER_URL</key>
+        <string>https://wedding.my-rem.com/api/internal/campaigns/process</string>
+        <key>WEDDING_CAMPAIGN_WORKER_POLL_SECONDS</key>
+        <string>30</string>
+        <key>PATH</key>
+        <string>/Users/michaelminipc/.nvm/versions/node/v22.22.0/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/michaelminipc/repos/movie-server/logs/whatsapp-agent.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/michaelminipc/repos/movie-server/logs/whatsapp-agent-error.log</string>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>

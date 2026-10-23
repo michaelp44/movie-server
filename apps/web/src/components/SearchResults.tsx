@@ -20,6 +20,17 @@ function formatBytes(bytes: number | null): string {
   return `${size.toFixed(1)} ${units[unitIndex]}`;
 }
 
+function compatibilityClass(level: NonNullable<ProviderSearchResult['compatibility']>['level']): string {
+  switch (level) {
+    case 'best':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200';
+    case 'ok':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200';
+    case 'risky':
+      return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200';
+  }
+}
+
 export function SearchResults({ results, onConfirm, loading }: SearchResultsProps) {
   if (results.length === 0) {
     return (
@@ -47,6 +58,14 @@ export function SearchResults({ results, onConfirm, loading }: SearchResultsProp
                   {result.quality}
                 </span>
               )}
+              {result.compatibility && (
+                <span
+                  className={`px-2 py-0.5 rounded ${compatibilityClass(result.compatibility.level)}`}
+                  title={result.compatibility.reasons.join(' | ')}
+                >
+                  {result.compatibility.label}
+                </span>
+              )}
               <span>{formatBytes(result.sizeBytes)}</span>
               {result.seeds !== null && (
                 <span className="text-green-600 dark:text-green-400">
@@ -72,4 +91,3 @@ export function SearchResults({ results, onConfirm, loading }: SearchResultsProp
     </div>
   );
 }
-

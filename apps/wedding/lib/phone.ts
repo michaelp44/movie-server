@@ -34,7 +34,8 @@ export function normalizeIsraeliPhone(input: string): string | null {
     digits = digits.slice(3);
   } else if (digits.startsWith("0")) {
     digits = digits.slice(1);
-  } else {
+  } else if (!/^[57]\d{8}$/.test(digits)) {
+    // Sheets may drop the leading zero from a local mobile number.
     return null;
   }
 

@@ -20,9 +20,9 @@ type SelectedFile = { file: File; preview: string };
 type UploadState = { phase: "ready" | "uploading" | "success" | "error"; progress: number; message: string };
 
 async function optimizeImage(file: File): Promise<File> {
-  if (!file.type.match(/^image\/(jpeg|png|webp)$/) || file.size < 1_500_000) return file;
+  if (!file.type.match(/^image\/(jpeg|png|webp)$/) || file.size < 750_000) return file;
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
@@ -30,7 +30,7 @@ async function optimizeImage(file: File): Promise<File> {
   if (!context) return file;
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
   return blob && blob.size < file.size
     ? new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg", lastModified: file.lastModified })
     : file;

@@ -2,10 +2,12 @@ export { configuredAdminEmails, createAdminAuthClient, getAuthenticatedAdmin, re
 export {
   getAdminInvitation,
   getAdminOverview,
+  getAdminDietaryTotals,
   getAdminTables,
   getRecentSyncRuns,
   getSiteSettings,
   listAdminInvitations,
+  listAdminRsvpInvitations,
   listAdminPhotos,
   listLiveWallItems,
   listGuestbookMessages,

@@ -4,16 +4,10 @@ import { requireAuth } from '../middleware/auth.middleware.js';
 import { logAudit } from '../services/audit.service.js';
 import { getProvider } from '../providers/index.js';
 import {
-  createDownload,
   getDownloads,
-  getDownloadById,
   getDownloadByIdForUser,
-  updateDownloadStatus,
-  setDownloadMagnet,
-  setDownloadQbHash,
 } from '../services/download.service.js';
-import { qbittorrentService } from '../services/qbittorrent.service.js';
-import { config } from '../config.js';
+import { startDownloadFromProviderResult } from '../services/download-start.service.js';
 import { logger } from '../logger.js';
 
 export async function downloadRoutes(fastify: FastifyInstance): Promise<void> {
@@ -85,50 +79,18 @@ export async function downloadRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     try {
-      // Get magnet/torrent URL from provider
-      const magnetOrTorrent = await provider.getMagnet(resultId);
-
-      // Check if this is a torrent URL (prefixed with "torrent:")
-      const isTorrentUrl = magnetOrTorrent.startsWith('torrent:');
-      const downloadUrl = isTorrentUrl ? magnetOrTorrent.slice(8) : magnetOrTorrent;
-
-      // Get details for the name
-      let name = resultId;
-      if (provider.getDetails) {
-        const details = await provider.getDetails(resultId);
-        name = (details['title'] as string) || resultId;
-      }
-
-      // Create download record
-      const download = createDownload(request.user!.id, name, providerName, resultId, downloadUrl);
-      setDownloadMagnet(download.id, downloadUrl);
-      updateDownloadStatus(download.id, 'FETCHING_MAGNET');
-
+      const download = await startDownloadFromProviderResult(
+        request.user!.id,
+        providerName,
+        resultId
+      );
       logAudit(request.user!.id, 'DOWNLOAD_CONFIRM', {
         downloadId: download.id,
         provider: providerName,
         resultId
       }, request.ip);
 
-      // Add to qBittorrent if enabled
-      if (qbittorrentService.isEnabled) {
-        updateDownloadStatus(download.id, 'ADDING_TO_QBITTORRENT');
-
-        // qBittorrent's /torrents/add endpoint accepts both magnet links and torrent URLs
-        const hash = await qbittorrentService.addMagnet(downloadUrl, config.downloadDir);
-
-        if (hash) {
-          setDownloadQbHash(download.id, hash);
-          updateDownloadStatus(download.id, 'DOWNLOADING');
-        } else {
-          updateDownloadStatus(download.id, 'FAILED', 'Failed to add to qBittorrent');
-        }
-      } else {
-        updateDownloadStatus(download.id, 'QUEUED');
-      }
-
-      const updatedDownload = getDownloadById(download.id);
-      return reply.send({ success: true, data: { download: updatedDownload } });
+      return reply.send({ success: true, data: { download } });
     } catch (error) {
       logger.error({ error, provider: providerName, resultId }, 'Download confirm failed');
       return reply.status(500).send({
@@ -153,4 +115,3 @@ export async function downloadRoutes(fastify: FastifyInstance): Promise<void> {
     return reply.send({ success: true, data: { download } });
   });
 }
-

@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { qbittorrentService } from '../services/qbittorrent.service.js';
 import { wsService } from '../services/websocket.service.js';
-import { plexService } from '../services/plex.service.js';
+import { mediaServerService } from '../services/media-server.service.js';
 import { ntfyService } from '../services/ntfy.service.js';
 import { db } from '../db/index.js';
 
@@ -16,11 +16,13 @@ export async function healthRoutes(fastify: FastifyInstance): Promise<void> {
       dbHealthy = false;
     }
 
-    // Check Plex and ntfy connectivity
-    const [plexHealth, ntfyHealth] = await Promise.all([
-      plexService.healthCheck(),
+    // Check media server and ntfy connectivity
+    const [mediaServersHealth, ntfyHealth] = await Promise.all([
+      mediaServerService.healthCheck(),
       ntfyService.healthCheck(),
     ]);
+    const plexHealth = mediaServersHealth.find((service) => service.source === 'plex');
+    const jellyfinHealth = mediaServersHealth.find((service) => service.source === 'jellyfin');
 
     const status = {
       status: dbHealthy ? 'healthy' : 'degraded',
@@ -35,9 +37,18 @@ export async function healthRoutes(fastify: FastifyInstance): Promise<void> {
           clients: wsService.getClientCount(),
         },
         plex: {
-          enabled: plexService.isEnabled(),
-          connected: plexHealth.connected,
-          serverName: plexHealth.serverName,
+          enabled: plexHealth?.enabled ?? false,
+          connected: plexHealth?.connected ?? false,
+          serverName: plexHealth?.serverName,
+        },
+        jellyfin: {
+          enabled: jellyfinHealth?.enabled ?? false,
+          connected: jellyfinHealth?.connected ?? false,
+          serverName: jellyfinHealth?.serverName,
+        },
+        mediaServers: {
+          enabled: mediaServerService.isAnyEnabled(),
+          services: mediaServersHealth,
         },
         ntfy: {
           enabled: ntfyService.isEnabled(),
@@ -61,4 +72,3 @@ export async function healthRoutes(fastify: FastifyInstance): Promise<void> {
     return reply.send({ success: true, data: { providers } });
   });
 }
-

@@ -2,9 +2,10 @@ import { config } from '../config.js';
 import { logger } from '../logger.js';
 import { qbittorrentService } from './qbittorrent.service.js';
 import { wsService } from './websocket.service.js';
-import { plexService } from './plex.service.js';
+import { mediaServerService } from './media-server.service.js';
 import { ntfyService } from './ntfy.service.js';
 import { checkAndCleanupStorage } from './storage.service.js';
+import { createPlexCompatibleAudioCopy } from './media-compatibility.service.js';
 import {
   getActiveDownloads,
   updateDownloadProgress,
@@ -15,10 +16,12 @@ import {
 } from './download.service.js';
 import { getUserById } from './user.service.js';
 import { addLibraryFile } from './library.service.js';
-import { join } from 'path';
-import { existsSync } from 'fs';
+import { join, extname, dirname, basename } from 'path';
+import { existsSync, renameSync } from 'fs';
 
 let pollingInterval: NodeJS.Timeout | null = null;
+const missingTorrentLastLoggedAt = new Map<string, number>();
+const MISSING_TORRENT_LOG_INTERVAL_MS = 60 * 60 * 1000;
 
 function mapQbState(state: string): 'DOWNLOADING' | 'PAUSED' | 'COMPLETED' | 'FAILED' | null {
   switch (state) {
@@ -45,6 +48,15 @@ function mapQbState(state: string): 'DOWNLOADING' | 'PAUSED' | 'COMPLETED' | 'FA
     default:
       return null;
   }
+}
+
+function parseMovieFilename(filename: string): { name: string; year: string } | null {
+  const match = filename.match(/^(?<name>.+?)[\.\s\(\[\_]+(?<year>19\d{2}|20\d{2})([\.\s\)\].]|$)/);
+  if (!match || !match.groups) return null;
+  const { name, year } = match.groups;
+  if (!name || !year) return null;
+  const cleanName = name.replace(/[\._]/g, ' ').trim();
+  return { name: cleanName, year };
 }
 
 async function pollQBittorrent(): Promise<void> {
@@ -76,9 +88,17 @@ async function pollQBittorrent(): Promise<void> {
       const torrent = torrents.find(t => t.hash.toLowerCase() === qbHash.toLowerCase());
 
       if (!torrent) {
-        logger.warn({ downloadId: download.id, qbHash }, 'Torrent not found in qBittorrent');
+        const now = Date.now();
+        const lastLoggedAt = missingTorrentLastLoggedAt.get(download.id) ?? 0;
+
+        if (now - lastLoggedAt >= MISSING_TORRENT_LOG_INTERVAL_MS) {
+          missingTorrentLastLoggedAt.set(download.id, now);
+          logger.warn({ downloadId: download.id, qbHash }, 'Torrent not found in qBittorrent');
+        }
         continue;
       }
+
+      missingTorrentLastLoggedAt.delete(download.id);
 
       // Update name from qBittorrent if it looks like a placeholder (starts with pb- or similar)
       if (download.name.match(/^pb-\d+-\d+$/) && torrent.name) {
@@ -122,22 +142,62 @@ async function pollQBittorrent(): Promise<void> {
           setDownloadSavePath(download.id, torrent.save_path);
           wsService.sendDownloadCompleted(download.id);
 
-          // Add files to library
+          // Get files info before deleting
           const files = await qbittorrentService.getTorrentFiles(qbHash);
+
+          // Remove torrent from qBittorrent (keep files) to release locks
+          try {
+            const success = await qbittorrentService.deleteTorrent(qbHash, false);
+            if (success) {
+              logger.info({ hash: qbHash, name: download.name }, 'Removed completed torrent from qBittorrent');
+            } else {
+              logger.warn({ hash: qbHash, name: download.name }, 'Failed to remove completed torrent from qBittorrent');
+            }
+          } catch (error) {
+            logger.error({ error, hash: qbHash }, 'Error removing torrent from qBittorrent');
+          }
+
+          // Add files to library
           for (const file of files) {
-            const filePath = join(torrent.save_path, file.name);
+            let filePath = join(torrent.save_path, file.name);
+
             if (existsSync(filePath)) {
+              // Try to rename if we can parse movie info
+              const filename = basename(filePath);
+              const parsed = parseMovieFilename(filename);
+
+              if (parsed) {
+                const ext = extname(filename);
+                const newName = `${parsed.name} (${parsed.year})${ext}`;
+                const newPath = join(dirname(filePath), newName);
+
+                // Only rename if the name is actually different
+                if (filePath !== newPath) {
+                  try {
+                    renameSync(filePath, newPath);
+                    logger.info({ from: filePath, to: newPath }, 'Renamed downloaded file');
+                    filePath = newPath;
+                  } catch (error) {
+                    logger.error({ error, filePath, newPath }, 'Failed to rename file');
+                  }
+                }
+              }
+
               try {
-                addLibraryFile(filePath, download.id);
+                const libraryPath = config.plexCompatibleAudioEnabled
+                  ? (await createPlexCompatibleAudioCopy(filePath)).filePath
+                  : filePath;
+
+                addLibraryFile(libraryPath, download.id);
               } catch (error) {
                 logger.error({ filePath, error }, 'Failed to add file to library');
               }
             }
           }
 
-          // Trigger Plex library scan
-          plexService.scanAllLibraries().catch((error) => {
-            logger.error({ error }, 'Failed to trigger Plex library scan');
+          // Trigger media server library scans
+          mediaServerService.scanAllLibraries().catch((error) => {
+            logger.error({ error }, 'Failed to trigger media server library scan');
           });
 
           // Send push notification with username
@@ -145,17 +205,6 @@ async function pollQBittorrent(): Promise<void> {
           const user = userId ? getUserById(userId) : undefined;
           ntfyService.notifyDownloadComplete(download.name, torrent.size, user?.username).catch((error) => {
             logger.error({ error }, 'Failed to send download complete notification');
-          });
-
-          // Remove torrent from qBittorrent (keep files)
-          qbittorrentService.deleteTorrent(qbHash, false).then((success) => {
-            if (success) {
-              logger.info({ hash: qbHash, name: download.name }, 'Removed completed torrent from qBittorrent');
-            } else {
-              logger.warn({ hash: qbHash, name: download.name }, 'Failed to remove completed torrent from qBittorrent');
-            }
-          }).catch((error) => {
-            logger.error({ error, hash: qbHash }, 'Error removing torrent from qBittorrent');
           });
 
           // Check and cleanup storage if needed
@@ -199,4 +248,3 @@ export function stopPolling(): void {
     logger.info('Stopped qBittorrent polling');
   }
 }
-

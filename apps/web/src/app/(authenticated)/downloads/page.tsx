@@ -136,7 +136,7 @@ export default function DownloadsPage() {
 
       {downloads.length === 0 ? (
         <div className="card text-center py-12 text-gray-500 dark:text-gray-400">
-          No downloads yet. Search for content on the Dashboard to get started.
+          No downloads yet. Search for movies or TV shows to get started.
         </div>
       ) : (
         <div className="space-y-4">
@@ -161,7 +161,7 @@ export default function DownloadsPage() {
                     <p className="mt-2 text-sm text-red-600 dark:text-red-400">{download.errorMessage}</p>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {download.status === 'DOWNLOADING' && (
                     <button onClick={() => handlePause(download.id)} className="btn btn-secondary text-sm">Pause</button>
                   )}
@@ -170,6 +170,16 @@ export default function DownloadsPage() {
                   )}
                   {!['COMPLETED', 'CANCELED', 'FAILED'].includes(download.status) && (
                     <button onClick={() => handleCancel(download.id)} className="btn btn-danger text-sm">Cancel</button>
+                  )}
+                  {download.status === 'COMPLETED' && (
+                    <a
+                      href={`/api/downloads/${encodeURIComponent(download.id)}/info`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary text-sm"
+                    >
+                      Info
+                    </a>
                   )}
                   {['COMPLETED', 'CANCELED', 'FAILED'].includes(download.status) && (
                     <button onClick={() => handleDelete(download.id)} className="btn btn-danger text-sm">Delete</button>
@@ -183,4 +193,3 @@ export default function DownloadsPage() {
     </div>
   );
 }
-

@@ -53,6 +53,12 @@ export type Database = {
           last_synced_at: string | null;
           sync_managed: boolean;
           admin_notes: string | null;
+          rsvp_updated_at: string | null;
+          rsvp_source: "website" | "whatsapp" | "phone" | "admin" | "google_sheet" | null;
+          rsvp_note: string | null;
+          rsvp_details: Json | null;
+          contact_opt_out: boolean;
+          checked_in_at: string | null;
         };
         Insert: TimestampInsert & {
           id?: string;
@@ -73,6 +79,12 @@ export type Database = {
           last_synced_at?: string | null;
           sync_managed?: boolean;
           admin_notes?: string | null;
+          rsvp_updated_at?: string | null;
+          rsvp_source?: "website" | "whatsapp" | "phone" | "admin" | "google_sheet" | null;
+          rsvp_note?: string | null;
+          rsvp_details?: Json | null;
+          contact_opt_out?: boolean;
+          checked_in_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["invitations"]["Insert"]>;
         Relationships: [
@@ -116,6 +128,166 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      rsvp_responses: {
+        Row: {
+          id: string;
+          invitation_id: string;
+          status: RsvpStatus;
+          number_confirmed: number;
+          source: "website" | "whatsapp" | "phone" | "admin" | "google_sheet";
+          note: string | null;
+          details: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          invitation_id: string;
+          status: RsvpStatus;
+          number_confirmed: number;
+          source: "website" | "whatsapp" | "phone" | "admin" | "google_sheet";
+          note?: string | null;
+          details?: Json | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["rsvp_responses"]["Insert"]>;
+        Relationships: [];
+      };
+      invitation_activity: {
+        Row: {
+          id: string;
+          invitation_id: string;
+          event_type: "link_opened" | "rsvp_page_viewed" | "interaction" | "rsvp_saved" | "rsvp_failed";
+          target: string | null;
+          details: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          invitation_id: string;
+          event_type: "link_opened" | "rsvp_page_viewed" | "interaction" | "rsvp_saved" | "rsvp_failed";
+          target?: string | null;
+          details?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["invitation_activity"]["Insert"]>;
+        Relationships: [];
+      };
+      message_deliveries: {
+        Row: Timestamps & {
+          id: string;
+          invitation_id: string;
+          channel: "whatsapp_web" | "whatsapp_cloud";
+          message_kind: "invitation" | "reminder" | "event_details" | "table_assignment" | "thank_you";
+          status: "pending" | "sent" | "failed";
+          message_body: string;
+          provider_message_id: string | null;
+          error_code: string | null;
+          error_message: string | null;
+          requested_by: string | null;
+          requested_at: string;
+          sent_at: string | null;
+          failed_at: string | null;
+        };
+        Insert: TimestampInsert & {
+          id?: string;
+          invitation_id: string;
+          channel?: "whatsapp_web" | "whatsapp_cloud";
+          message_kind: "invitation" | "reminder" | "event_details" | "table_assignment" | "thank_you";
+          status?: "pending" | "sent" | "failed";
+          message_body: string;
+          provider_message_id?: string | null;
+          error_code?: string | null;
+          error_message?: string | null;
+          requested_by?: string | null;
+          requested_at?: string;
+          sent_at?: string | null;
+          failed_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["message_deliveries"]["Insert"]>;
+        Relationships: [];
+      };
+      message_campaigns: {
+        Row: Timestamps & {
+          id: string;
+          name: string;
+          message_kind: "invitation" | "reminder" | "event_details" | "table_assignment" | "thank_you";
+          audience: "all_contactable" | "pending_rsvp" | "confirmed" | "declined";
+          guest_group_filter: string | null;
+          guest_side_filter: "michael" | "shoval" | "unassigned" | null;
+          status: "draft" | "queued" | "running" | "paused" | "completed" | "cancelled";
+          min_delay_seconds: number;
+          max_delay_seconds: number;
+          scheduled_for: string | null;
+          next_run_at: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          created_by: string | null;
+        };
+        Insert: TimestampInsert & {
+          id?: string;
+          name: string;
+          message_kind: "invitation" | "reminder" | "event_details" | "table_assignment" | "thank_you";
+          audience: "all_contactable" | "pending_rsvp" | "confirmed" | "declined";
+          guest_group_filter?: string | null;
+          guest_side_filter?: "michael" | "shoval" | "unassigned" | null;
+          status?: "draft" | "queued" | "running" | "paused" | "completed" | "cancelled";
+          min_delay_seconds?: number;
+          max_delay_seconds?: number;
+          scheduled_for?: string | null;
+          next_run_at?: string | null;
+          started_at?: string | null;
+          completed_at?: string | null;
+          created_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["message_campaigns"]["Insert"]>;
+        Relationships: [];
+      };
+      message_campaign_recipients: {
+        Row: Timestamps & {
+          id: string;
+          campaign_id: string;
+          invitation_id: string;
+          status: "queued" | "sending" | "sent" | "failed" | "skipped";
+          delivery_id: string | null;
+          attempt_count: number;
+          last_error: string | null;
+          processed_at: string | null;
+        };
+        Insert: TimestampInsert & {
+          id?: string;
+          campaign_id: string;
+          invitation_id: string;
+          status?: "queued" | "sending" | "sent" | "failed" | "skipped";
+          delivery_id?: string | null;
+          attempt_count?: number;
+          last_error?: string | null;
+          processed_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["message_campaign_recipients"]["Insert"]>;
+        Relationships: [];
+      };
+      call_attempts: {
+        Row: {
+          id: string;
+          invitation_id: string;
+          outcome: "no_answer" | "confirmed" | "declined" | "callback" | "wrong_number";
+          number_confirmed: number | null;
+          note: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          invitation_id: string;
+          outcome: "no_answer" | "confirmed" | "declined" | "callback" | "wrong_number";
+          number_confirmed?: number | null;
+          note?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["call_attempts"]["Insert"]>;
+        Relationships: [];
       };
       photo_uploads: {
         Row: Timestamps & {

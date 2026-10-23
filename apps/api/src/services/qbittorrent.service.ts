@@ -23,6 +23,26 @@ interface QBTorrentFile {
   priority: number;
 }
 
+export function extractMagnetInfoHash(magnetUri: string): string | null {
+  if (!magnetUri.startsWith('magnet:?')) {
+    return null;
+  }
+
+  try {
+    const params = new URLSearchParams(magnetUri.slice('magnet:?'.length));
+    for (const xt of params.getAll('xt')) {
+      const match = xt.match(/^urn:btih:([a-fA-F0-9]{40}|[a-zA-Z2-7]{32})$/);
+      if (match?.[1]) {
+        return match[1].toLowerCase();
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 class QBittorrentService {
   private baseUrl: string;
   private cookie: string | null = null;
@@ -125,8 +145,7 @@ class QBittorrentService {
       if (response.ok) {
         // For magnet links, extract hash directly
         if (magnetOrUrl.startsWith('magnet:')) {
-          const match = magnetOrUrl.match(/urn:btih:([a-fA-F0-9]{40}|[a-zA-Z2-7]{32})/i);
-          const hash = match?.[1]?.toLowerCase() ?? null;
+          const hash = extractMagnetInfoHash(magnetOrUrl);
           logger.info({ hash }, 'Torrent added to qBittorrent from magnet');
           return hash;
         }
@@ -224,4 +243,3 @@ class QBittorrentService {
 
 export const qbittorrentService = new QBittorrentService();
 export type { QBTorrent, QBTorrentFile };
-

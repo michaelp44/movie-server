@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useState, FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { ProviderSearchResult } from '@movie-server/shared';
 import { searchProvider, confirmDownload, getProviders } from '@/lib/api';
 import { SearchResults } from '@/components/SearchResults';
 import { useEffect } from 'react';
 
-export default function DashboardPage() {
+export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [provider, setProvider] = useState('piratebay');
   const [providers, setProviders] = useState<Array<{ name: string; displayName: string }>>([]);
@@ -17,14 +17,14 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     getProviders().then(setProviders).catch(console.error);
   }, []);
 
-  const handleSearch = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  const runSearch = useCallback(async (searchQuery: string, providerName: string) => {
+    if (!searchQuery.trim()) return;
 
     setError('');
     setSuccess('');
@@ -32,13 +32,37 @@ export default function DashboardPage() {
     setResults([]);
 
     try {
-      const searchResults = await searchProvider(query, provider);
+      const searchResults = await searchProvider(searchQuery, providerName);
       setResults(searchResults);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
     } finally {
       setSearching(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const requestedQuery = searchParams.get('q');
+    const shouldAutoSearch = searchParams.get('autoSearch') === '1';
+
+    if (!requestedQuery || !shouldAutoSearch || providers.length === 0) {
+      return;
+    }
+
+    const requestedProvider = searchParams.get('provider');
+    const nextProvider = providers.some((item) => item.name === requestedProvider)
+      ? requestedProvider!
+      : provider;
+
+    setQuery(requestedQuery);
+    setProvider(nextProvider);
+    runSearch(requestedQuery, nextProvider);
+    router.replace(`/?q=${encodeURIComponent(requestedQuery)}`);
+  }, [provider, providers, router, runSearch, searchParams]);
+
+  const handleSearch = async (e: FormEvent) => {
+    e.preventDefault();
+    await runSearch(query, provider);
   };
 
   const handleConfirm = async (result: ProviderSearchResult) => {
@@ -48,12 +72,7 @@ export default function DashboardPage() {
 
     try {
       await confirmDownload(result.provider, result.id);
-      setSuccess(`"${result.title}" has been added to downloads!`);
-      setResults([]);
-      setQuery('');
-      
-      // Redirect to downloads page after a short delay
-      setTimeout(() => router.push('/downloads'), 1500);
+      setSuccess(`"${result.title}" is downloading in the background.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start download');
     } finally {
@@ -65,10 +84,10 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Dashboard
+          Search
         </h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Search for public domain content to download
+          Search for movies or TV shows to download
         </p>
       </div>
 
@@ -80,7 +99,7 @@ export default function DashboardPage() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search for movies..."
+                placeholder="Search for movies or TV shows..."
                 className="input"
               />
             </div>
@@ -121,7 +140,7 @@ export default function DashboardPage() {
       {results.length > 0 && (
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Search Results
+            Search Results for "{query}"
           </h2>
           <SearchResults
             results={results}
@@ -133,4 +152,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { runGuestSyncAction } from "@/app/actions/admin";
+import { runGuestSyncAction, verifyGoogleSheetsWriteAccessAction, verifyGoogleSheetsWritebackAction } from "@/app/actions/admin";
 import { AdminNotice } from "@/components/admin/notice";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
@@ -40,6 +40,18 @@ export default async function AdminSyncPage({ searchParams }: { searchParams: Pr
       />
       <AdminNotice>{params.notice}</AdminNotice>
       {!configured ? <AdminNotice>חיבור Google Sheets עדיין אינו מוגדר. הוסיפו את משתני הסביבה ושתפו את הגיליון עם ה-service account.</AdminNotice> : null}
+      {configured ? (
+        <div className="mb-6 rounded-2xl border border-black/10 bg-white p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+          <div>
+            <p className="font-semibold">כתיבת אישורי הגעה בחזרה לגיליון</p>
+            <p className="mt-1 text-sm text-black/55">בדיקת הרשאה אינה משנה תוכן. בדיקת הקצה כותבת מחדש ערכים קיימים של הזמנה מסונכרנת ללא שינוי בתשובה.</p>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2 sm:mt-0">
+            <form action={verifyGoogleSheetsWriteAccessAction}><SubmitButton pendingLabel="בודקים…">בדיקת הרשאה</SubmitButton></form>
+            <form action={verifyGoogleSheetsWritebackAction}><SubmitButton pendingLabel="כותבים ובודקים…">בדיקת קצה מוגבלת</SubmitButton></form>
+          </div>
+        </div>
+      ) : null}
       <AdminNotice>{previewResult.error ?? undefined}</AdminNotice>
       {previewResult.preview ? <PreviewPanel preview={previewResult.preview} /> : null}
       <section className="mt-10">

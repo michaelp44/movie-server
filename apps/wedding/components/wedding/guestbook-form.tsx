@@ -11,9 +11,15 @@ const initialState: SubmissionState = { status: "idle", message: "" };
 export function GuestbookForm({
   defaultName = "",
   enabled = true,
+  submitLabel = "שליחת הברכה",
+  heading,
+  description,
 }: {
   defaultName?: string;
   enabled?: boolean;
+  submitLabel?: string;
+  heading?: string;
+  description?: string;
 }) {
   const [state, action, pending] = useActionState(submitGuestbookMessage, initialState);
 
@@ -28,7 +34,11 @@ export function GuestbookForm({
   }
 
   return (
-    <form action={action} className="rounded-[2rem] border border-stone-900/10 bg-white/68 p-5 shadow-[0_18px_60px_rgba(40,33,24,.06)] sm:p-7">
+    <form action={action} aria-labelledby={heading ? "guestbook-heading" : undefined} className="rounded-[2rem] border border-stone-900/10 bg-white/68 p-5 shadow-[0_18px_60px_rgba(40,33,24,.06)] sm:p-7">
+      {heading ? <div className="mb-5 border-b border-stone-900/10 pb-4">
+        <h2 id="guestbook-heading" className="text-xl font-semibold">{heading}</h2>
+        {description ? <p className="mt-1 text-sm leading-6 text-stone-600">{description}</p> : null}
+      </div> : null}
       <fieldset disabled={!enabled} className="grid gap-5">
         <div>
           <label htmlFor="guestbook-name" className="mb-2 block text-sm font-semibold">השם שלכם</label>
@@ -39,7 +49,7 @@ export function GuestbookForm({
           <Textarea id="guestbook-message" name="message" rows={5} maxLength={1200} required placeholder="כמה מילים שנשמח לשמור איתנו…" />
         </div>
         <Button type="submit" size="lg" disabled={pending || !enabled} className="w-full sm:w-fit">
-          {pending ? "שומרים את הברכה…" : "שליחת הברכה"}
+          {pending ? "שומרים את הברכה…" : submitLabel}
           {!pending && <Send aria-hidden="true" size={17} />}
         </Button>
         <p aria-live="polite" className="min-h-5 text-sm text-red-800">

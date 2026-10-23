@@ -21,6 +21,9 @@ const managedFields: SyncManagedField[] = [
 
 function changesFor(source: MappedInvitation, existing: ExistingInvitation): SyncChange[] {
   return managedFields.flatMap((field) => {
+    if ((field === "rsvpStatus" || field === "numberConfirmed") && existing.rsvpSource && existing.rsvpSource !== "google_sheet") {
+      return [];
+    }
     const before = existing[field];
     const after = source[field];
     return before === after ? [] : [{ field, before, after }];

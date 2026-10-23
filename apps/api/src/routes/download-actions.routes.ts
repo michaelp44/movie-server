@@ -3,11 +3,12 @@ import { downloadIdParamSchema } from '@movie-server/shared';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { logAudit } from '../services/audit.service.js';
 import { getDownloadByIdForUser, updateDownloadStatus, deleteDownload } from '../services/download.service.js';
-import { deleteLibraryFilesByDownloadId } from '../services/library.service.js';
+import { deleteLibraryFilesByDownloadId, getLibraryFilesByDownloadId } from '../services/library.service.js';
 import { qbittorrentService } from '../services/qbittorrent.service.js';
 import { wsService } from '../services/websocket.service.js';
 import { db } from '../db/index.js';
 import { logger } from '../logger.js';
+import { tmdbService } from '../services/tmdb.service.js';
 
 async function getQbHash(downloadId: string): Promise<string | null> {
   const stmt = db.prepare('SELECT qbittorrent_hash FROM downloads WHERE id = ?');
@@ -132,6 +133,22 @@ export async function downloadActionsRoutes(fastify: FastifyInstance): Promise<v
     }
   });
 
+  // Open best matching TMDB info page for a downloaded item
+  fastify.get('/api/downloads/:id/info', { preHandler: requireAuth }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const params = downloadIdParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return reply.status(400).send({ success: false, error: 'Invalid download ID' });
+    }
+
+    const download = getDownloadByIdForUser(params.data.id, request.user!.id);
+    if (!download) {
+      return reply.status(404).send({ success: false, error: 'Download not found' });
+    }
+
+    const infoUrl = await tmdbService.resolveInfoUrl(download.name);
+    return reply.redirect(infoUrl);
+  });
+
   // Delete download and associated files
   fastify.delete('/api/downloads/:id', { preHandler: requireAuth }, async (request: FastifyRequest, reply: FastifyReply) => {
     const params = downloadIdParamSchema.safeParse(request.params);
@@ -149,14 +166,40 @@ export async function downloadActionsRoutes(fastify: FastifyInstance): Promise<v
     // Delete torrent from qBittorrent if still there
     const qbHash = await getQbHash(download.id);
     if (qbHash && qbittorrentService.isEnabled) {
-      await qbittorrentService.deleteTorrent(qbHash, true).catch((error) => {
-        logger.warn({ error, qbHash }, 'Failed to delete torrent from qBittorrent');
-      });
+      try {
+        const deletedFromQbittorrent = await qbittorrentService.deleteTorrent(qbHash, true);
+        if (!deletedFromQbittorrent) {
+          logger.warn({ downloadId: download.id, qbHash }, 'qBittorrent did not confirm torrent deletion');
+          return reply.status(502).send({
+            success: false,
+            error: 'Failed to delete torrent from qBittorrent',
+          });
+        }
+      } catch (error) {
+        logger.warn({ error, downloadId: download.id, qbHash }, 'Failed to delete torrent from qBittorrent');
+        return reply.status(502).send({
+          success: false,
+          error: 'Failed to delete torrent from qBittorrent',
+        });
+      }
     }
 
     // Delete associated library files (and files from disk)
+    const libraryFiles = getLibraryFilesByDownloadId(download.id);
     const deletedFilesCount = deleteLibraryFilesByDownloadId(download.id);
     logger.info({ downloadId: download.id, deletedFilesCount }, 'Deleted library files for download');
+
+    if (deletedFilesCount !== libraryFiles.length) {
+      logger.warn({
+        downloadId: download.id,
+        expectedFilesCount: libraryFiles.length,
+        deletedFilesCount,
+      }, 'Some library files failed to delete');
+      return reply.status(500).send({
+        success: false,
+        error: 'Some downloaded files could not be deleted from disk',
+      });
+    }
 
     // Delete the download record
     deleteDownload(download.id);
@@ -166,4 +209,3 @@ export async function downloadActionsRoutes(fastify: FastifyInstance): Promise<v
     return reply.send({ success: true });
   });
 }
-

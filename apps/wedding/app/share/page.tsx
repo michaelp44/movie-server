@@ -14,7 +14,16 @@ export default async function SharePage() {
   const enabled = isGuestInteractionConfigured();
   return (
     <PageShell eyebrow="אתם חלק מהסיפור" title="שתפו עם מסך החתונה ❤️" description="צלמו רגע, כתבו לנו כמה מילים, ושתפו אותם איתנו על המסך באולם.">
-      <div className="grid gap-6 lg:grid-cols-2"><PhotoUploader enabled={enabled} /><GuestbookForm defaultName={invitation?.displayName ?? ""} enabled={enabled} /></div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <PhotoUploader enabled={enabled} />
+        <GuestbookForm
+          defaultName={invitation?.displayName ?? ""}
+          enabled={enabled}
+          heading="ברכה בלבד למסך"
+          description="אפשר לשלוח כאן ברכה בלי תמונה — היא מיועדת להופיע על המסך באולם."
+          submitLabel="שליחת הברכה למסך"
+        />
+      </div>
       <div className="mt-6"><LiveReactions enabled={enabled} /></div>
     </PageShell>
   );

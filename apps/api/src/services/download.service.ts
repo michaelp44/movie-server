@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/index.js';
-import type { Download, DownloadStatus, PaginatedResponse } from '@movie-server/shared';
+import type { AdminDownload, Download, DownloadStatus, PaginatedResponse } from '@movie-server/shared';
 
 interface DownloadRow {
   id: string;
@@ -21,6 +21,10 @@ interface DownloadRow {
   error_message: string | null;
 }
 
+interface AdminDownloadRow extends DownloadRow {
+  username: string;
+}
+
 function rowToDownload(row: DownloadRow): Download {
   return {
     id: row.id,
@@ -36,6 +40,14 @@ function rowToDownload(row: DownloadRow): Download {
     sourceProvider: row.source_provider,
     sourceId: row.source_id,
     errorMessage: row.error_message ?? undefined,
+  };
+}
+
+function rowToAdminDownload(row: AdminDownloadRow): AdminDownload {
+  return {
+    ...rowToDownload(row),
+    userId: row.user_id,
+    username: row.username,
   };
 }
 
@@ -205,6 +217,17 @@ export function getActiveDownloads(): Download[] {
   `);
   const rows = stmt.all() as DownloadRow[];
   return rows.map(rowToDownload);
+}
+
+export function getAllDownloadsForAdmin(): AdminDownload[] {
+  const rows = db.prepare(`
+    SELECT downloads.*, users.username
+    FROM downloads
+    INNER JOIN users ON users.id = downloads.user_id
+    ORDER BY downloads.created_at DESC
+  `).all() as AdminDownloadRow[];
+
+  return rows.map(rowToAdminDownload);
 }
 
 export function deleteDownload(id: string): void {

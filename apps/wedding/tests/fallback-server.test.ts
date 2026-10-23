@@ -18,6 +18,12 @@ async function signed(pathname: string, body: unknown) {
   return fetch(`${origin}${pathname}`, { method: "POST", body: text, headers: { "content-type": "application/json", "x-wedding-timestamp": timestamp, "x-wedding-signature": signature } });
 }
 
+async function signedGet(pathname: string) {
+  const timestamp = Date.now().toString();
+  const signature = createHmac("sha256", secret).update(`${timestamp}.`).digest("hex");
+  return fetch(`${origin}${pathname}`, { headers: { "x-wedding-timestamp": timestamp, "x-wedding-signature": signature } });
+}
+
 describe("Mac fallback server", () => {
   beforeAll(async () => {
     dataDirectory = await mkdtemp(join(tmpdir(), "wedding-fallback-test-"));
@@ -59,6 +65,31 @@ describe("Mac fallback server", () => {
     const second = await signed("/v1/songs", { ...input, id: randomUUID(), operationId: randomUUID() });
     expect((await first.json()).duplicate).toBe(false);
     expect((await second.json()).duplicate).toBe(true);
+  });
+
+  it("stores private invitation activity locally and makes it readable", async () => {
+    const eventId = randomUUID();
+    const invitationId = randomUUID();
+    const createdAt = new Date().toISOString();
+    const written = await signed("/v1/invitation-activity", {
+      id: eventId,
+      invitationId,
+      displayName: "אורח בדיקה",
+      eventType: "rsvp_saved",
+      target: "declined",
+      details: { numberConfirmed: 0 },
+      createdAt,
+    });
+    expect(written.ok).toBe(true);
+    const payload = await signedGet("/v1/invitation-activity").then((response) => response.json()) as { events: Array<Record<string, unknown>> };
+    expect(payload.events).toContainEqual(expect.objectContaining({
+      id: eventId,
+      invitation_id: invitationId,
+      display_name: "אורח בדיקה",
+      event_type: "rsvp_saved",
+      target: "declined",
+      details: { numberConfirmed: 0 },
+    }));
   });
 
   it("enforces rate-limit counters locally", async () => {

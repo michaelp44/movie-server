@@ -44,3 +44,20 @@ export async function requireAuth(
   request.sessionId = sessionId;
 }
 
+export async function requireAdmin(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  await requireAuth(request, reply);
+
+  if (reply.sent) {
+    return;
+  }
+
+  if (request.user?.username !== 'admin') {
+    return reply.status(403).send({
+      success: false,
+      error: 'Admin access required',
+    });
+  }
+}

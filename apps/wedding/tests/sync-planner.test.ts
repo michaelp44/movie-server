@@ -51,6 +51,14 @@ describe("sync plan", () => {
     expect(plan.additions).toHaveLength(0);
   });
 
+  it("does not overwrite a newer RSVP collected by the website", () => {
+    const plan = buildSyncPlan(
+      [source({ numberConfirmed: 0, rsvpStatus: "pending", tableNumber: "15" })],
+      [existing({ numberConfirmed: 2, rsvpStatus: "confirmed", rsvpSource: "website" })],
+    );
+    expect(plan.updates[0]?.changes.map((change) => change.field)).toEqual(["tableNumber"]);
+  });
+
   it("syncs phone-less invitations by source identity and adds a phone later", () => {
     const withoutPhone = source({
       sourceRowId: "name:משפחת ישראלי",

@@ -26,6 +26,37 @@ export interface AdminInvitation {
   updatedAt: string;
 }
 
+export interface AdminRsvpInvitation extends AdminInvitation {
+  rsvpSource: "website" | "whatsapp" | "phone" | "admin" | "google_sheet" | null;
+  rsvpUpdatedAt: string | null;
+  rsvpNote: string | null;
+  rsvpDetails: import("@/lib/rsvp/details").RsvpDetails | null;
+  contactOptOut: boolean;
+  checkedInAt: string | null;
+  responseHistory: Array<{
+    id: string;
+    status: string;
+    numberConfirmed: number;
+    source: "website" | "whatsapp" | "phone" | "admin" | "google_sheet";
+    note: string | null;
+    details: import("@/lib/rsvp/details").RsvpDetails | null;
+    createdAt: string;
+  }>;
+  lastCall: {
+    outcome: "no_answer" | "confirmed" | "declined" | "callback" | "wrong_number";
+    note: string | null;
+    createdAt: string;
+  } | null;
+  lastDelivery: {
+    id: string;
+    kind: "invitation" | "reminder" | "event_details" | "table_assignment" | "thank_you";
+    status: "pending" | "sent" | "failed";
+    createdAt: string;
+    sentAt: string | null;
+    errorMessage: string | null;
+  } | null;
+}
+
 export interface AdminTable {
   id: string;
   tableNumber: string;

@@ -7,6 +7,8 @@ import { getCurrentUser, login as apiLogin, logout as apiLogout } from './api';
 interface AuthContextType {
   user: User | null;
   ntfyTopic: string | null;
+  ntfySubscribeUrl: string | null;
+  ntfyWebUrl: string | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -18,6 +20,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [ntfyTopic, setNtfyTopic] = useState<string | null>(null);
+  const [ntfySubscribeUrl, setNtfySubscribeUrl] = useState<string | null>(null);
+  const [ntfyWebUrl, setNtfyWebUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -25,9 +29,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await getCurrentUser();
       setUser(result?.user ?? null);
       setNtfyTopic(result?.ntfyTopic ?? null);
+      setNtfySubscribeUrl(result?.ntfySubscribeUrl ?? null);
+      setNtfyWebUrl(result?.ntfyWebUrl ?? null);
     } catch {
       setUser(null);
       setNtfyTopic(null);
+      setNtfySubscribeUrl(null);
+      setNtfyWebUrl(null);
     } finally {
       setLoading(false);
     }
@@ -47,10 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await apiLogout();
     setUser(null);
     setNtfyTopic(null);
+    setNtfySubscribeUrl(null);
+    setNtfyWebUrl(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, ntfyTopic, loading, login, logout, refresh }}>
+    <AuthContext.Provider value={{ user, ntfyTopic, ntfySubscribeUrl, ntfyWebUrl, loading, login, logout, refresh }}>
       {children}
     </AuthContext.Provider>
   );
@@ -63,4 +73,3 @@ export function useAuth() {
   }
   return context;
 }
-

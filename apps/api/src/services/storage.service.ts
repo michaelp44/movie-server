@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import { config } from '../config.js';
 import { logger } from '../logger.js';
-import { plexService } from './plex.service.js';
+import { mediaServerService } from './media-server.service.js';
 import {
   getAllLibraryFilesOldestFirst,
   deleteLibraryFile,
@@ -75,8 +75,8 @@ export async function cleanupStorage(): Promise<{ deleted: string[]; freedBytes:
     return { deleted, freedBytes };
   }
 
-  // Get watched files from Plex
-  const watchedFiles = await plexService.getWatchedFiles();
+  // Get watched files from configured media servers.
+  const watchedFiles = await mediaServerService.getWatchedFiles();
   const watchedPaths = new Set(watchedFiles.map((f) => f.file));
 
   // Separate files into watched and unwatched
@@ -146,4 +146,3 @@ export async function checkAndCleanupStorage(): Promise<void> {
     logger.error({ error }, 'Storage cleanup failed');
   }
 }
-

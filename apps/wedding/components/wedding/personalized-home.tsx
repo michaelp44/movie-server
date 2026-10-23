@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Countdown } from "@/components/wedding/countdown";
 import { GuestbookForm } from "@/components/wedding/guestbook-form";
 import { QuickActions } from "@/components/wedding/quick-actions";
+import { GuestActivityTracker } from "@/components/wedding/rsvp-activity-tracker";
 import { Reveal } from "@/components/wedding/reveal";
 import { MobileNav } from "@/components/wedding/mobile-nav";
 import { SiteHeader } from "@/components/wedding/site-header";
@@ -18,12 +19,13 @@ function rsvpCopy(invitation: InvitationDTO) {
     return `אישרתם הגעה עבור ${invitation.numberConfirmed ?? invitation.numberInvited} אורחים`;
   }
   if (invitation.rsvpStatus === "declined") return "עדכנתם שלא תוכלו להגיע — נתגעגע אליכם";
-  return `ההזמנה שלכם היא עבור ${invitation.numberInvited} אורחים`;
+  return "נשמח לדעת אם תגיעו וכמה תהיו";
 }
 
 export function PersonalizedHome({ invitation, seatingPublished }: { invitation: InvitationDTO; seatingPublished: boolean }) {
   return (
-    <div className="min-h-screen bg-[#f6f2e9]">
+    <div id="personalized-home" className="min-h-screen bg-[#f6f2e9]">
+      <GuestActivityTracker rootId="personalized-home" />
       <SiteHeader />
       <MobileNav />
       <main className="overflow-hidden bg-[#f6f2e9] pb-16 lg:pb-24">

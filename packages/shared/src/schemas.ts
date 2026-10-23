@@ -20,6 +20,17 @@ export const signupSchema = z.object({
 
 export type SignupInput = z.infer<typeof signupSchema>;
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(8).max(100),
+  newPassword: z.string().min(8).max(100),
+  confirmPassword: z.string().min(8).max(100),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 // Download request schemas
 export const downloadRequestSchema = z.object({
   query: z.string().min(1).max(200).trim(),
@@ -34,6 +45,32 @@ export const downloadConfirmSchema = z.object({
 });
 
 export type DownloadConfirmInput = z.infer<typeof downloadConfirmSchema>;
+
+export const wantedDownloadQualitySchema = z.enum(['720p', '1080p', '2160p']);
+
+export const createWantedDownloadSchema = z.object({
+  title: z.string().min(1).max(200).trim(),
+  year: z.coerce.number().int().min(1900).max(2100).default(new Date().getFullYear()),
+  mediaType: z.enum(['movie', 'show']).default('movie'),
+  minQuality: wantedDownloadQualitySchema.default('1080p'),
+});
+
+export type CreateWantedDownloadInput = z.infer<typeof createWantedDownloadSchema>;
+
+export const wantedDownloadIdParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const wantedDownloadAvailabilitySchema = z.object({
+  minQuality: wantedDownloadQualitySchema.default('1080p'),
+  items: z.array(z.object({
+    id: z.string().min(1).max(200),
+    title: z.string().min(1).max(200).trim(),
+    year: z.coerce.number().int().min(1900).max(2100).optional(),
+  })).min(1).max(30),
+});
+
+export type WantedDownloadAvailabilityInput = z.infer<typeof wantedDownloadAvailabilitySchema>;
 
 // Download status schema
 export const downloadStatusSchema = z.enum([
@@ -75,7 +112,7 @@ export const fileIdParamSchema = z.object({
 });
 
 export const downloadIdParamSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().uuid('Invalid download ID'),
 });
 
 // Provider search result schema
@@ -88,11 +125,31 @@ export const providerSearchResultSchema = z.object({
   provider: z.string(),
   year: z.number().optional(),
   quality: z.string().optional(),
+  compatibility: z.object({
+    score: z.number(),
+    level: z.enum(['best', 'ok', 'risky']),
+    label: z.string(),
+    reasons: z.array(z.string()),
+  }).optional(),
 });
+
+export const dismissRecommendationSchema = z.object({
+  itemId: z.string().min(1).max(200),
+  title: z.string().min(1).max(300),
+  source: z.string().min(1).max(50),
+  reason: z.enum(['already_watched', 'not_interested']).default('already_watched'),
+});
+
+export type DismissRecommendationInput = z.infer<typeof dismissRecommendationSchema>;
+
+export const promptRecommendationSchema = z.object({
+  prompt: z.string().min(3).max(300).trim(),
+});
+
+export type PromptRecommendationInput = z.infer<typeof promptRecommendationSchema>;
 
 // Magnet URI validation (basic)
 export const magnetUriSchema = z.string().refine(
   (val) => val.startsWith('magnet:?'),
   { message: 'Invalid magnet URI format' }
 );
-

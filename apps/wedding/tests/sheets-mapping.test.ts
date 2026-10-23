@@ -13,6 +13,7 @@ describe("Google Sheets mapping", () => {
     "050 123 4567",
     "+972501234567",
     "972501234567",
+    "501234567",
   ])("normalizes %s to one canonical phone", (phone) => {
     expect(normalizeSheetPhone(phone)).toBe("+972501234567");
   });
@@ -33,6 +34,16 @@ describe("Google Sheets mapping", () => {
       guestGroup: "חברים",
     });
     expect(result.invitations[0]?.sourcePayload["עמודת הערות"]).toBe("טקסט שנשמר במקור");
+  });
+
+  it("preserves a confirmed count above the invitation estimate", () => {
+    const result = mapGuestSheet([
+      ["שם להזמנה", "טלפון", "כמות מוזמנים", "מספר מאושרים", "סטטוס הגעה"],
+      ["משפחת כהן", "0501234567", "2", "35", "כן"],
+    ]);
+
+    expect(result.issues).toEqual([]);
+    expect(result.invitations[0]).toMatchObject({ numberInvited: 2, numberConfirmed: 35 });
   });
 
   it("supports exact configurable headers", () => {

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.movieserver.whatsapp-agent.weekly-maintenance</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/Users/michaelminipc/repos/movie-server/scripts/weekly-whatsapp-agent-maintenance.zsh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/michaelminipc/repos/movie-server</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/Users/michaelminipc/.nvm/versions/node/v22.22.0/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>0</integer>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>LowPriorityIO</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/michaelminipc/repos/movie-server/logs/whatsapp-agent-weekly-maintenance.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/michaelminipc/repos/movie-server/logs/whatsapp-agent-weekly-maintenance-error.log</string>
+</dict>
+</plist>

@@ -194,7 +194,7 @@ Israeli numbers are normalized to an E.164-style value such as `+972501234567`. 
 
 Lookup happens only on the server. A successful match creates a signed session containing only the invitation UUID, issue/expiry times, and a random nonce. The cookie is HttpOnly, SameSite=Lax, Secure in production, and expires after 180 days. It contains no name or phone number. “זה לא אני” clears it.
 
-Personalized URLs use `/g/<secure-token>`. Tokens are random and never contain a phone number or guest name. The route immediately exchanges a valid token for the same guest session and redirects to `/`, removing the token from the visible URL.
+Personalized URLs use `/g/<secure-token>`. Tokens are random and never contain a phone number or guest name. The route immediately exchanges a valid token for the same guest session and redirects to `/`, removing the token from the visible URL. WhatsApp RSVP links use `/g/<secure-token>?next=rsvp`, so opening the invitation identifies the household for 180 days before continuing to its RSVP form.
 
 ## Google Sheets integration
 
@@ -248,6 +248,38 @@ Open `/admin/sync` and choose **הכנת תצוגה מקדימה**. The preview:
 After review, choose **סנכרן אורחים מ-Google Sheets**. Apply recalculates the plan from a fresh read, upserts additions/changes, creates referenced table numbers if needed, and logs row-level results. Records that disappeared from Sheets are only marked `missing_from_source`; they are never deleted automatically.
 
 Direct admin edits to sheet-managed invitation fields may be overwritten by the next synchronization. Make durable guest-list changes in Google Sheets.
+
+RSVP answers collected through the website or entered by an admin are the exception: their status/count and source timestamp are preserved by later guest-list synchronization. Every response is also appended to `rsvp_responses` for audit/history.
+
+The server-side write-back adapter updates only the existing RSVP and confirmed-count cells on the matched source row. It restricts writes to configured guest tabs and refuses ambiguous rows or missing columns. Keep `GOOGLE_SHEETS_WRITEBACK_ENABLED=false` while the service account is Viewer. After granting Editor access, use the non-mutating check in `/admin/sync`, test one known row, and only then set the flag to `true`. Write-back runs after the website response is saved, so a temporary Google failure never loses or delays the guest's RSVP.
+
+## RSVP and supervised WhatsApp invitations
+
+- Personalized response URL: `/rsvp/<secure-token>`
+- Identified-guest shortcut: `/rsvp`
+- Admin dashboard: `/admin/rsvp`
+- Automatic campaign queue: `/admin/rsvp/campaigns`
+- CSV export: `/api/admin/rsvp.csv`
+
+The admin can preview and send one personalized message per explicit click, or deliberately create a campaign after a second confirmation step. Campaigns can filter by RSVP status and by the invitation's `guest_group` (for example, a family, work group, or one side of the wedding). The chosen group is saved on the campaign. A campaign snapshots only contactable invitations, excludes recipients who already received that message kind, and sends one queued recipient at a time with a randomized 55–110 second delay. The worker rechecks current RSVP/group membership before sending, so a guest who changes status or category while queued is skipped. Campaigns can be paused, resumed, or cancelled from a phone. The server creates a pending `message_deliveries` record and marks it sent only after the localhost WhatsApp agent returns a provider message ID. Failure leaves an auditable failed delivery and never pretends the guest was contacted.
+
+The local chain is:
+
+`Vercel server action -> signed wedding fallback -> 127.0.0.1:8790 -> linked WhatsApp Web client`
+
+There is intentionally no unrestricted bulk-send endpoint. The Mac worker polls the protected single-step campaign route, which releases at most one due recipient; the localhost bridge still accepts only one canonical Israeli recipient, a bounded message, a unique operation ID, and the shared fallback secret. Repeated operation IDs are idempotent. This transport is unofficial and may stop working or cause account restrictions; the website data model can later add the official Cloud API without changing the guest-facing RSVP flow.
+
+### Official WhatsApp Cloud API preparation
+
+`lib/rsvp/whatsapp-cloud.ts` contains a server-side Cloud API template sender, a raw-body `X-Hub-Signature-256` verifier, and a parser for correlated RSVP quick replies (`rsvp_confirmed`, `rsvp_declined`, `rsvp_unsure`). It is tested but **not connected to live sends or RSVP writes yet**. Existing WhatsApp Web sends remain unchanged until the Meta account, business number, approved Hebrew template, billing, and webhook are ready and a test message succeeds. Do not put a temporary Meta token into production or send credentials through chat.
+
+The future Cloud API setup needs `WHATSAPP_CLOUD_ACCESS_TOKEN` (long-lived token with messaging permission), `WHATSAPP_CLOUD_PHONE_NUMBER_ID`, `WHATSAPP_CLOUD_API_VERSION`, `WHATSAPP_CLOUD_APP_SECRET`, and `WHATSAPP_CLOUD_WEBHOOK_VERIFY_TOKEN`. Store them only in Vercel's server-side environment. The intended invitation template has Hebrew body parameters and three quick-reply buttons in this exact order: arriving, not arriving, unsure. Template names and parameter order must be confirmed against the approved Meta template before enabling sends. The webhook must match a reply to the outbound provider message ID and sender, process it idempotently, and update `rsvp_responses` and `invitations`; this final wiring remains pending.
+
+Apply `supabase/migrations/202609230001_rsvp_communications.sql`, `202609230002_rsvp_permissions.sql`, and `202609240001_whatsapp_campaigns.sql` before deploying these routes. The campaign worker uses `WEDDING_CAMPAIGN_WORKER_SECRET`, falling back to the existing shared fallback secret, and calls `/api/internal/campaigns/process`. After rebuilding the WhatsApp agent, restart both `com.movieserver.whatsapp-agent` and `com.shoval-michael.wedding-fallback`.
+
+The expanded RSVP form also needs `supabase/migrations/202610100001_rsvp_details.sql` before deployment. It stores adult/child counts, transport interest, dietary selections, and allergy notes as structured `rsvp_details` on the invitation, with a snapshot in each website RSVP response. These fields are not managed by the Google Sheet sync; admins can see them under each invitation in `/admin/rsvp`.
+
+Invitation activity uses `supabase/migrations/202610150001_invitation_activity.sql`. It records personalized-link opens, RSVP page views, button/field interactions, and successful or failed RSVP submissions. Admins can review recent events at `/admin/rsvp/activity`, including a per-invitation filter from `/admin/rsvp`. The same records are mirrored over the signed Mac fallback connection into `~/Library/Application Support/ShovalMichaelWedding/wedding-fallback.sqlite`; when the external wedding drive is mounted, the existing five-minute backup job copies that database to `/Volumes/My Passport/Wedding-Shoval-Michael/fallback-backup/wedding-fallback.sqlite`. The admin activity page merges Supabase with the Mac copy and reports the availability of both sources. Only the invitation ID, display name, action name, timestamp, and limited RSVP outcome metadata are stored; link tokens, phone numbers, and free-text answers are not copied into this log. This activity log supplements the existing `rsvp_responses` answer history.
 
 ## Admin access
 

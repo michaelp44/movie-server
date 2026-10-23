@@ -1,4 +1,5 @@
 export { fetchWeddingSheetData, getGoogleSheetEnvironment } from "./client";
+export { parseSyncedSourceRowId, verifyGoogleSheetsWriteAccess, writeRsvpToGoogleSheet, writeSyncedInvitationRsvp } from "./writeback";
 export {
   applySeatingSheet,
   defaultHeaderAliases,

@@ -127,12 +127,12 @@ function parseCount(
 ): number {
   if (!value) return fallback;
   const parsed = Number(value.replace(/,/g, ""));
-  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 30) {
+  if (!Number.isInteger(parsed) || parsed < 0 || (field === "numberInvited" && parsed > 30)) {
     issues.push({
       rowNumber,
       field,
       code: "invalid_number",
-      message: `Row ${rowNumber}: ${field} must be an integer between 0 and 30.`,
+      message: `Row ${rowNumber}: ${field} must be a nonnegative integer${field === "numberInvited" ? " no greater than 30" : ""}.`,
     });
     return fallback;
   }
@@ -337,7 +337,7 @@ export function mapGuestSheet(values: string[][], config: SheetMappingConfig = {
       primaryPhone: primaryPhone || null,
       normalizedPhone,
       numberInvited,
-      numberConfirmed: Math.min(numberConfirmed, numberInvited),
+      numberConfirmed,
       rsvpStatus,
       tableNumber: parseTable(cell(row.values, resolvedHeaders, "tableNumber"), row.rowNumber, issues),
       guestGroup: cell(row.values, resolvedHeaders, "guestGroup") || null,

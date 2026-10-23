@@ -12,6 +12,36 @@ const PARTY_ROTATION_MS = 8_500;
 const FRAME_SIZE = 5;
 type Scene = "collage" | "spotlight" | "blessing" | "mosaic" | "illustration" | "favorite";
 
+// Private Supabase objects are returned with `cache-control: no-cache`. Scenes
+// remount their images frequently, so keeping one in-memory blob URL per asset
+// prevents the projector from downloading the same full-size photo all night.
+const cachedMediaUrls = new Map<string, string>();
+const pendingMediaUrls = new Map<string, Promise<string>>();
+
+function cachedMediaUrl(src: string): Promise<string> {
+  const cached = cachedMediaUrls.get(src);
+  if (cached) return Promise.resolve(cached);
+  const pending = pendingMediaUrls.get(src);
+  if (pending) return pending;
+  const request = fetch(src)
+    .then((response) => {
+      if (!response.ok) throw new Error(`Media request failed (${response.status})`);
+      return response.blob();
+    })
+    .then((blob) => {
+      const url = URL.createObjectURL(blob);
+      cachedMediaUrls.set(src, url);
+      pendingMediaUrls.delete(src);
+      return url;
+    })
+    .catch((error) => {
+      pendingMediaUrls.delete(src);
+      throw error;
+    });
+  pendingMediaUrls.set(src, request);
+  return request;
+}
+
 function uniqueFrame(queue: WallItem[], all: WallItem[], count = FRAME_SIZE): WallItem[] {
   const seen = new Set<string>();
   return [...queue, ...all].filter((item) => {
@@ -23,8 +53,19 @@ function uniqueFrame(queue: WallItem[], all: WallItem[], count = FRAME_SIZE): Wa
 
 function SmartCropImage({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
   const imageRef = useRef<HTMLImageElement>(null);
+  const [cachedSource, setCachedSource] = useState(() => ({ source: src, url: cachedMediaUrls.get(src) ?? src }));
+  const displaySrc = cachedSource.source === src ? cachedSource.url : cachedMediaUrls.get(src) ?? src;
   const [objectPosition, setObjectPosition] = useState("50% 10%");
   const [crop, setCrop] = useState<ReturnType<typeof centeredFaceCrop>>(null);
+  useEffect(() => {
+    let active = true;
+    void cachedMediaUrl(src).then((url) => {
+      if (active) setCachedSource({ source: src, url });
+    }).catch(() => {
+      // Keep the original signed URL visible if preloading fails.
+    });
+    return () => { active = false; };
+  }, [src]);
   useEffect(() => {
     const image = imageRef.current;
     const card = image?.parentElement;
@@ -49,7 +90,7 @@ function SmartCropImage({ src, alt, className = "" }: { src: string; alt: string
     // Private signed URLs cannot use the public Next image optimizer.
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      src={displaySrc}
       ref={imageRef}
       alt={alt}
       crossOrigin="anonymous"
@@ -160,6 +201,10 @@ export function LiveWallScreen({ initial, demo = false }: { initial: LiveWallPay
   const [floating, setFloating] = useState<Array<{ id: string; emoji: string }>>([]);
   const seenReactions = useRef(new Set<string>());
   const knownItems = useRef(new Set(initial.items.map((item) => item.id)));
+  const stableMediaUrls = useRef(new Map(initial.items.map((item) => [item.id, {
+    mediaUrl: item.mediaUrl,
+    illustrationUrl: item.illustrationUrl,
+  }])));
   const premiereActive = useRef(false);
   const premiereTimer = useRef<number | null>(null);
   const advanceRef = useRef<() => void>(() => undefined);
@@ -207,8 +252,20 @@ export function LiveWallScreen({ initial, demo = false }: { initial: LiveWallPay
       try {
         const response = await fetch("/api/live", { cache: "no-store" });
         if (!response.ok) throw new Error(String(response.status));
-        const next = await response.json() as LiveWallPayload;
+        const received = await response.json() as LiveWallPayload;
         if (!active) return;
+        const next: LiveWallPayload = {
+          ...received,
+          items: received.items.map((item) => {
+            const cached = stableMediaUrls.current.get(item.id);
+            const stable = {
+              mediaUrl: cached?.mediaUrl ?? item.mediaUrl,
+              illustrationUrl: cached?.illustrationUrl ?? item.illustrationUrl,
+            };
+            stableMediaUrls.current.set(item.id, stable);
+            return { ...item, ...stable };
+          }),
+        };
         const fresh = next.items.find((item) => !knownItems.current.has(item.id));
         next.items.forEach((item) => knownItems.current.add(item.id));
         setPayload(next);
@@ -238,7 +295,7 @@ export function LiveWallScreen({ initial, demo = false }: { initial: LiveWallPay
         }
       } catch { if (active) setOnline(false); }
     };
-    const interval = window.setInterval(poll, 5_000);
+    const interval = window.setInterval(poll, 10_000);
     const reconnect = () => void poll();
     window.addEventListener("online", reconnect);
     void poll();

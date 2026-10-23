@@ -1,17 +1,24 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signup } from '@/lib/api';
+import { getSignupStatus, signup } from '@/lib/api';
 
 export default function SignupPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [signupEnabled, setSignupEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    getSignupStatus()
+      .then((status) => setSignupEnabled(status.signupEnabled))
+      .catch(() => setSignupEnabled(true));
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -51,6 +58,16 @@ export default function SignupPage() {
           </p>
         </div>
 
+        {!signupEnabled ? (
+          <div className="space-y-6">
+            <div className="rounded-lg bg-yellow-100 p-3 text-sm text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+              Signup is currently disabled.
+            </div>
+            <Link href="/login" className="btn btn-primary flex w-full justify-center">
+              Back to login
+            </Link>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="p-3 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded-lg text-sm">
@@ -126,15 +143,17 @@ export default function SignupPage() {
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
+        )}
 
+        {signupEnabled && (
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           Already have an account?{' '}
           <Link href="/login" className="text-blue-600 hover:text-blue-500 dark:text-blue-400">
             Sign in
           </Link>
         </p>
+        )}
       </div>
     </div>
   );
 }
-

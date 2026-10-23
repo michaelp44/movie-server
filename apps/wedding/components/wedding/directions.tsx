@@ -1,6 +1,7 @@
 import { CarFront, MapPin, Navigation, Route } from "lucide-react";
 import { weddingConfig } from "@/lib/wedding-config";
 import { SectionHeading } from "@/components/wedding/section-heading";
+import { WazeDirectionLink } from "@/components/wedding/waze-direction-link";
 
 type DirectionLinkProps = {
   href: string;
@@ -42,7 +43,6 @@ export function Directions() {
       <SectionHeading
         eyebrow="הדרך לחגיגה"
         title="איך מגיעים?"
-        description="שמרו את הקישור המועדף, ובערב עצמו תנו לנווט לקחת אתכם ישר אלינו."
       />
 
       <div className="mt-7 overflow-hidden rounded-[2rem] border border-stone-900/10 bg-white/70 shadow-[0_20px_65px_rgba(45,37,25,0.07)]">
@@ -95,7 +95,7 @@ export function Directions() {
             </div>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <DirectionLink href={maps.waze} label="פתיחה ב-Waze" icon={Navigation} />
+              <WazeDirectionLink href={maps.waze} />
               <DirectionLink href={maps.googleMaps} label="פתיחה ב-Google Maps" icon={MapPin} />
             </div>
           </div>

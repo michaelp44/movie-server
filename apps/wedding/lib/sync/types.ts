@@ -9,6 +9,7 @@ export interface ExistingInvitation {
   numberInvited: number;
   numberConfirmed: number;
   rsvpStatus: RsvpStatus;
+  rsvpSource?: "website" | "whatsapp" | "phone" | "admin" | "google_sheet" | null;
   tableNumber: string | null;
   guestGroup: string | null;
   missingFromSource?: boolean;

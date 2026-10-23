@@ -48,11 +48,10 @@ describe('Health Routes', () => {
       expect(body.data).toHaveProperty('providers');
       expect(Array.isArray(body.data.providers)).toBe(true);
       
-      // Should have at least the movie provider
-      const movieProvider = body.data.providers.find((p: { name: string }) => p.name === 'movie');
-      expect(movieProvider).toBeDefined();
-      expect(movieProvider.displayName).toBe('Public Domain Movies');
+      // Should have at least the torrent provider used by the search UI
+      const torrentProvider = body.data.providers.find((p: { name: string }) => p.name === 'piratebay');
+      expect(torrentProvider).toBeDefined();
+      expect(torrentProvider.displayName).toBe('Torrent Search');
     });
   });
 });
-

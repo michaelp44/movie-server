@@ -9,6 +9,7 @@ describe("normalizeIsraeliPhone", () => {
     "+972501234567",
     "972501234567",
     "00972 50 123 4567",
+    "501234567",
   ])("normalizes %s to the same E.164 value", (input) => {
     expect(normalizeIsraeliPhone(input)).toBe("+972501234567");
   });

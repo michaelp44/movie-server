@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { SubmitButton } from "@/components/admin/submit-button";
 import { listAdminInvitations } from "@/lib/admin";
+import { Download } from "lucide-react";
 
 const statusOptions = [
   ["pending", "ממתינים"],
@@ -22,7 +23,16 @@ export default async function AdminGuestsPage({
   const invitations = await listAdminInvitations({ search: params.q, status: params.status });
   return (
     <>
-      <PageHeader title="אורחים והזמנות" description="כל הזמנה מייצגת בית, זוג, משפחה או אורח יחיד — ולא בהכרח אדם אחד." />
+      <PageHeader
+        title="אורחים והזמנות"
+        description="כל הזמנה מייצגת בית, זוג, משפחה או אורח יחיד — ולא בהכרח אדם אחד."
+        action={(
+          <a href="/api/admin/iplan.xls" download className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-black/15 bg-white px-4 text-sm font-semibold">
+            <Download className="size-4" />
+            הורדה ל-iPlan
+          </a>
+        )}
+      />
       <AdminNotice>{params.notice}</AdminNotice>
       <aside className="mb-6 rounded-2xl border border-amber-300/50 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
         שדות שמקורם ב-Google Sheets עלולים להידרס בסנכרון הבא. שינויים קבועים ברשימת האורחים יש לבצע בגיליון המקור.
@@ -76,7 +86,7 @@ function InvitationForm({ invitation, className = "" }: { invitation?: Awaited<R
       <Field label="שם ההזמנה" name="displayName" required defaultValue={invitation?.displayName} />
       <Field label="טלפון (אפשר להשלים בהמשך)" name="phone" dir="ltr" defaultValue={invitation?.primaryPhone ?? invitation?.normalizedPhone ?? ""} />
       <Field label="מספר מוזמנים" name="numberInvited" type="number" min={1} max={30} required defaultValue={invitation?.numberInvited ?? 1} />
-      <Field label="מספר מאושרים" name="numberConfirmed" type="number" min={0} max={30} required defaultValue={invitation?.numberConfirmed ?? 0} />
+      <Field label="מספר מאושרים" name="numberConfirmed" type="number" min={0} required defaultValue={invitation?.numberConfirmed ?? 0} />
       <SelectField label="סטטוס" name="rsvpStatus" defaultValue={invitation?.rsvpStatus ?? "pending"}>
         {statusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </SelectField>

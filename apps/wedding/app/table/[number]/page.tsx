@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookHeart, Camera, Music2 } from "lucide-react";
+import { Camera } from "lucide-react";
 import { notFound } from "next/navigation";
 import { PageShell } from "@/components/wedding/page-shell";
 import { parseTableNumber } from "@/lib/table";
@@ -27,17 +27,15 @@ export default async function TableQrPage({ params }: TableQrPageProps) {
 
   const tableActions = [
     { href: `/photos?table=${tableNumber}`, label: "מעלים תמונות", description: "תראו לנו את הערב דרך העיניים שלכם", icon: Camera },
-    { href: "/guestbook", label: "כותבים לנו ברכה", description: "כמה מילים שנשמור גם אחרי החתונה", icon: BookHeart },
-    { href: "/song", label: "מבקשים שיר", description: "השיר שפשוט חייב להיות ברחבה", icon: Music2 },
   ] as const;
 
   return (
     <PageShell
       eyebrow="ברוכים הבאים"
       title={`שולחן ${tableNumber}`}
-      description="הגעתם למקום הנכון. מכאן אפשר להעלות רגעים מהערב, להשאיר לנו ברכה ולבקש את השיר הבא."
+      description="הגעתם למקום הנכון. מכאן אפשר להעלות רגעים מהערב ולשתף אותם עם כולם."
     >
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {tableActions.map((action) => {
           const Icon = action.icon;
           return (

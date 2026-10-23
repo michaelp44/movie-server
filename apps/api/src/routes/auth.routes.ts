@@ -1,15 +1,37 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { loginSchema, signupSchema } from '@movie-server/shared';
-import { verifyPassword, getUserById, getUserByUsername, createUser } from '../services/user.service.js';
+import { changePasswordSchema, loginSchema, signupSchema } from '@movie-server/shared';
+import {
+  changeUserPassword,
+  verifyPassword,
+  getUserById,
+  getUserByUsername,
+  createUser,
+} from '../services/user.service.js';
 import { createSession, deleteSession, getSession } from '../services/session.service.js';
 import { logAudit } from '../services/audit.service.js';
 import { config } from '../config.js';
 import { DEFAULTS } from '@movie-server/shared';
 import { ntfyService } from '../services/ntfy.service.js';
+import { isSignupEnabled } from '../services/settings.service.js';
+import { requireAuth } from '../middleware/auth.middleware.js';
 
 export async function authRoutes(fastify: FastifyInstance): Promise<void> {
+  fastify.get('/api/auth/signup-status', async (_request: FastifyRequest, reply: FastifyReply) => {
+    return reply.send({
+      success: true,
+      data: { signupEnabled: isSignupEnabled() },
+    });
+  });
+
   // Signup
   fastify.post('/api/auth/signup', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!isSignupEnabled()) {
+      return reply.status(403).send({
+        success: false,
+        error: 'Signup is currently disabled',
+      });
+    }
+
     const parseResult = signupSchema.safeParse(request.body);
 
     if (!parseResult.success) {
@@ -109,6 +131,38 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     return reply.send({ success: true });
   });
 
+  fastify.post(
+    '/api/auth/change-password',
+    { preHandler: requireAuth },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parseResult = changePasswordSchema.safeParse(request.body);
+
+      if (!parseResult.success) {
+        const firstError = parseResult.error.issues[0];
+        return reply.status(400).send({
+          success: false,
+          error: firstError?.message ?? 'Invalid password change request',
+        });
+      }
+
+      const changed = await changeUserPassword(
+        request.user!.id,
+        parseResult.data.currentPassword,
+        parseResult.data.newPassword
+      );
+
+      if (!changed) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Current password is incorrect',
+        });
+      }
+
+      logAudit(request.user!.id, 'PASSWORD_CHANGE', {}, request.ip);
+      return reply.send({ success: true });
+    }
+  );
+
   // Get current user
   fastify.get('/api/auth/me', async (request: FastifyRequest, reply: FastifyReply) => {
     const sessionId = request.cookies['session'];
@@ -137,13 +191,14 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       });
     }
 
-    // Get ntfy topic for user if enabled
+    // Get ntfy topic and subscribe deep link for user if enabled
     const ntfyTopic = ntfyService.isEnabled() ? ntfyService.getTopicForUser(user.username) : null;
+    const ntfySubscribeUrl = ntfyService.getSubscribeUrlForUser(user.username);
+    const ntfyWebUrl = ntfyService.getWebUrlForUser(user.username);
 
     return reply.send({
       success: true,
-      data: { user, ntfyTopic },
+      data: { user, ntfyTopic, ntfySubscribeUrl, ntfyWebUrl },
     });
   });
 }
-

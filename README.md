@@ -9,7 +9,7 @@ A production-ready home server for managing torrent-based downloads with a web U
 - **qBittorrent Integration** - Uses qBittorrent-nox as the torrent engine
 - **File Library** - Browse and download completed files
 - **File Upload** - Manually upload files to your library
-- **Plex Integration** - Automatically refresh Plex libraries on download completion
+- **Plex/Jellyfin Integration** - Automatically refresh media libraries on download completion
 - **Push Notifications** - Get notified via ntfy when downloads complete or fail
 - **Authentication** - Single-user login with secure sessions
 - **Audit Logging** - Track all user actions
@@ -102,7 +102,7 @@ QBITTORRENT_PASSWORD=<displayed-password>
 
 Access the Web UI at http://localhost:8080 and configure:
 
-1. **Downloads** → Set default save path to match `DOWNLOAD_DIR`
+1. **Downloads** → Set default save path to match `DOWNLOAD_DIR` in `.env` (for example, `/Volumes/My Passport/Movies`)
 2. **Web UI** → Enable "Bypass authentication for localhost"
 3. **Connection** → Configure port forwarding if needed
 
@@ -111,11 +111,11 @@ Access the Web UI at http://localhost:8080 and configure:
 Set `QBITTORRENT_ENABLED=false` in `.env` to run in UI-only mode.
 The UI will work but downloads won't actually start.
 
-## Plex Integration
+## Plex and Jellyfin Integration
 
-When a download completes, Movie Server can automatically trigger a Plex library scan.
+When a download completes, Movie Server can automatically trigger media library scans. Plex and Jellyfin can both be enabled at the same time. Recommendations and storage cleanup use watched status and metadata from every enabled media server.
 
-### Setup
+### Plex Setup
 
 1. Get your Plex token: https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/
 
@@ -126,7 +126,20 @@ PLEX_HOST=http://localhost:32400
 PLEX_TOKEN=your-plex-token
 ```
 
-The server will scan all movie and TV show libraries when a download completes.
+### Jellyfin Setup
+
+1. Finish the Jellyfin first-run setup and add the same folder used by `DOWNLOAD_DIR` as a library.
+2. Create a Jellyfin API key from the admin dashboard.
+3. Find the Jellyfin user id for the user whose watch history should drive recommendations.
+4. Add to `.env`:
+```env
+JELLYFIN_ENABLED=true
+JELLYFIN_HOST=http://localhost:8096
+JELLYFIN_API_KEY=your-jellyfin-api-key
+JELLYFIN_USER_ID=your-jellyfin-user-id
+```
+
+The server will scan enabled Plex and Jellyfin libraries when a download completes.
 
 ## Push Notifications (ntfy)
 
@@ -315,4 +328,3 @@ npm test
 ## License
 
 MIT
-

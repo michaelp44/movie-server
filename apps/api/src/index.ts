@@ -13,14 +13,24 @@ import { wsService } from './services/websocket.service.js';
 import { qbittorrentService } from './services/qbittorrent.service.js';
 import { startPolling, stopPolling } from './services/polling.service.js';
 import { scanDownloadDirectory } from './services/library.service.js';
-import { mkdirSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
+import {
+  startWantedDownloadScheduler,
+  stopWantedDownloadScheduler,
+} from './services/wanted-download-scheduler.service.js';
 
 async function main() {
   // Initialize database
   initializeDatabase();
 
-  // Ensure download directory exists
-  mkdirSync(config.downloadDir, { recursive: true });
+  // Keep the API online even when an external download drive is temporarily unmounted.
+  try {
+    if (!existsSync(config.downloadDir)) {
+      mkdirSync(config.downloadDir, { recursive: true });
+    }
+  } catch (error) {
+    logger.warn({ error, downloadDir: config.downloadDir }, 'Download directory is not available');
+  }
 
   // Create Fastify instance
   const fastify = Fastify({
@@ -89,11 +99,13 @@ async function main() {
 
   // Scan download directory for existing files
   scanDownloadDirectory();
+  startWantedDownloadScheduler();
 
   // Graceful shutdown
   const shutdown = async () => {
     logger.info('Shutting down...');
     stopPolling();
+    stopWantedDownloadScheduler();
     await fastify.close();
     closeDatabase();
     process.exit(0);
@@ -117,4 +129,3 @@ main().catch((error) => {
   logger.error('Fatal error:', error);
   process.exit(1);
 });
-

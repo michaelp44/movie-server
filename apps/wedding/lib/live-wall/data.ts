@@ -84,9 +84,12 @@ export async function getLiveWallPayload(): Promise<LiveWallPayload> {
   if (likesError) console.error("Live Wall likes could not be loaded", likesError);
   const likeCounts = new Map<string, number>();
   for (const like of likes ?? []) likeCounts.set(like.photo_id, (likeCounts.get(like.photo_id) ?? 0) + 1);
-  const signed = paths.length ? await db.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(paths, 15 * 60) : { data: [] };
+  // A wall can stay open for an entire event. Long-lived URLs, combined with the
+  // client-side URL cache, prevent the same private image being downloaded again
+  // whenever the feed is refreshed.
+  const signed = paths.length ? await db.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(paths, 12 * 60 * 60) : { data: [] };
   const signedIllustrations = illustrationRows.length
-    ? await db.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(illustrationRows.map((row) => row.illustration_path!), 15 * 60)
+    ? await db.storage.from(WEDDING_MEDIA_BUCKET).createSignedUrls(illustrationRows.map((row) => row.illustration_path!), 12 * 60 * 60)
     : { data: [] };
   const illustrationUrls = new Map(illustrationRows.map((row, index) => [row.id, signedIllustrations.data?.[index]?.signedUrl ?? null]));
   const photos: WallItem[] = photoRows.flatMap((row, index) => {

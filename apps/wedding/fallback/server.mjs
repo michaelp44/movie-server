@@ -91,6 +91,23 @@ db.exec(`
     value integer not null,
     updated_at text not null
   );
+  create table if not exists whatsapp_sends (
+    operation_id text primary key,
+    recipient_hash text not null,
+    provider_message_id text not null,
+    created_at text not null
+  );
+  create table if not exists invitation_activity (
+    id text primary key,
+    invitation_id text not null,
+    display_name text,
+    event_type text not null check (event_type in ('link_opened','rsvp_page_viewed','interaction','rsvp_saved','rsvp_failed')),
+    target text,
+    details text not null default '{}',
+    created_at text not null
+  );
+  create index if not exists invitation_activity_created_idx on invitation_activity (created_at desc);
+  create index if not exists invitation_activity_invitation_idx on invitation_activity (invitation_id, created_at desc);
 `);
 if (!db.prepare("pragma table_info(submissions)").all().some((column) => column.name === "preview_path")) {
   db.exec("alter table submissions add column preview_path text");
@@ -176,6 +193,50 @@ async function handleSigned(request, response, pathname) {
   const now = new Date().toISOString();
 
   if (request.method === "GET" && pathname === "/v1/live") return json(response, 200, wallPayload());
+  if (request.method === "GET" && pathname === "/v1/invitation-activity") {
+    const events = db.prepare("select id, invitation_id, display_name, event_type, target, details, created_at from invitation_activity order by created_at desc limit 500")
+      .all().map((event) => ({ ...event, details: JSON.parse(event.details) }));
+    return json(response, 200, { events });
+  }
+  if (request.method === "POST" && pathname === "/v1/invitation-activity") {
+    const eventTypes = new Set(["link_opened", "rsvp_page_viewed", "interaction", "rsvp_saved", "rsvp_failed"]);
+    const details = payload.details && typeof payload.details === "object" && !Array.isArray(payload.details) ? payload.details : {};
+    const validDetails = Object.keys(details).every((key) => key === "numberConfirmed") &&
+      (details.numberConfirmed === undefined || (Number.isSafeInteger(details.numberConfirmed) && details.numberConfirmed >= 0));
+    if (!/^[0-9a-f-]{36}$/i.test(payload.id || "") || !/^[0-9a-f-]{36}$/i.test(payload.invitationId || "") ||
+      !eventTypes.has(payload.eventType) || (payload.target != null && (typeof payload.target !== "string" || payload.target.length > 80)) ||
+      (payload.displayName != null && (typeof payload.displayName !== "string" || payload.displayName.length > 120)) || !validDetails ||
+      typeof payload.createdAt !== "string" || !Number.isFinite(Date.parse(payload.createdAt))) {
+      return json(response, 400, { error: "invalid activity event" });
+    }
+    db.prepare("insert or ignore into invitation_activity (id, invitation_id, display_name, event_type, target, details, created_at) values (?, ?, ?, ?, ?, ?, ?)")
+      .run(payload.id, payload.invitationId, payload.displayName || null, payload.eventType, payload.target || null, JSON.stringify(details), payload.createdAt);
+    return json(response, 200, { success: true });
+  }
+  if (request.method === "POST" && pathname === "/v1/whatsapp/send") {
+    if (!/^[0-9a-f-]{36}$/i.test(payload.operationId || "") || !/^972\d{8,9}$/.test(payload.recipient || "") || typeof payload.message !== "string" || payload.message.length < 1 || payload.message.length > 4096 || (payload.mediaUrl != null && payload.mediaUrl !== "https://wedding.my-rem.com/images/wedding-invitation.jpg")) {
+      return json(response, 400, { error: "invalid send request" });
+    }
+    const previous = db.prepare("select provider_message_id from whatsapp_sends where operation_id = ?").get(payload.operationId);
+    if (previous) return json(response, 200, { messageId: previous.provider_message_id, duplicate: true });
+    let agentResponse;
+    try {
+      agentResponse = await fetch(`http://127.0.0.1:${Number(process.env.WEDDING_WHATSAPP_CONTROL_PORT || 8790)}/send`, {
+        method: "POST",
+        headers: { "authorization": `Bearer ${secret}`, "content-type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch {
+      return json(response, 503, { error: "whatsapp agent unavailable" });
+    }
+    const result = await agentResponse.json().catch(() => ({}));
+    if (!agentResponse.ok || typeof result.messageId !== "string") return json(response, 503, { error: "whatsapp send failed" });
+    db.prepare("insert into whatsapp_sends (operation_id, recipient_hash, provider_message_id, created_at) values (?, ?, ?, ?)")
+      .run(payload.operationId, sha256(payload.recipient), result.messageId, now);
+    recordOperation("whatsapp-send", { operationId: payload.operationId, providerMessageId: result.messageId });
+    return json(response, 200, { messageId: result.messageId });
+  }
   if (request.method === "POST" && pathname === "/v1/gallery") {
     const published = db.prepare("select value from site_settings where key = 'gallery_published'").get()?.value !== 0;
     if (!published) return json(response, 200, { media: [] });

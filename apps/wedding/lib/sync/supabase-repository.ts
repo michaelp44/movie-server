@@ -16,12 +16,12 @@ function jsonValue(value: unknown): Json {
   return JSON.parse(JSON.stringify(value)) as Json;
 }
 
-function sourcePayload(source: MappedInvitation, fallbackSourceTab: string) {
+function sourcePayload(source: MappedInvitation, fallbackSourceTab: string, preserveLiveRsvp = false) {
   const sourceHash = createHash("sha256")
     .update(JSON.stringify(source.sourcePayload))
     .digest("hex");
 
-  return {
+  const payload = {
     source_row_id: source.sourceRowId,
     display_name: source.displayName,
     primary_phone: source.primaryPhone,
@@ -29,6 +29,8 @@ function sourcePayload(source: MappedInvitation, fallbackSourceTab: string) {
     number_invited: source.numberInvited,
     number_confirmed: source.numberConfirmed,
     rsvp_status: source.rsvpStatus,
+    rsvp_source: "google_sheet" as const,
+    rsvp_updated_at: new Date().toISOString(),
     table_number: source.tableNumber,
     guest_group: source.guestGroup,
     source_tab: source.sourceTab ?? fallbackSourceTab,
@@ -39,6 +41,13 @@ function sourcePayload(source: MappedInvitation, fallbackSourceTab: string) {
     last_synced_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
+  if (preserveLiveRsvp) {
+    delete (payload as Partial<typeof payload>).number_confirmed;
+    delete (payload as Partial<typeof payload>).rsvp_status;
+    delete (payload as Partial<typeof payload>).rsvp_source;
+    delete (payload as Partial<typeof payload>).rsvp_updated_at;
+  }
+  return payload;
 }
 
 function assertNoError(error: { message: string } | null): void {
@@ -62,7 +71,7 @@ export class SupabaseSyncRepository implements SyncRepository {
     const { data, error } = await this.client
       .from("invitations")
       .select(
-        "id, source_row_id, display_name, primary_phone, normalized_phone, number_invited, number_confirmed, rsvp_status, table_number, guest_group, missing_from_source",
+        "id, source_row_id, display_name, primary_phone, normalized_phone, number_invited, number_confirmed, rsvp_status, rsvp_source, table_number, guest_group, missing_from_source",
       );
     assertNoError(error);
     return (data ?? []).map((row) => ({
@@ -74,6 +83,7 @@ export class SupabaseSyncRepository implements SyncRepository {
       numberInvited: Number(row.number_invited ?? 0),
       numberConfirmed: Number(row.number_confirmed ?? 0),
       rsvpStatus: row.rsvp_status,
+      rsvpSource: row.rsvp_source,
       tableNumber: row.table_number ? String(row.table_number) : null,
       guestGroup: row.guest_group ? String(row.guest_group) : null,
       missingFromSource: Boolean(row.missing_from_source),
@@ -88,7 +98,10 @@ export class SupabaseSyncRepository implements SyncRepository {
 
   async updateInvitation(id: string, source: MappedInvitation): Promise<void> {
     await this.ensureTable(source.tableNumber);
-    const { error } = await this.client.from("invitations").update(sourcePayload(source, this.source.guestTabNames[0]!)).eq("id", id);
+    const { data: existing, error: readError } = await this.client.from("invitations").select("rsvp_source").eq("id", id).single();
+    assertNoError(readError);
+    const preserveLiveRsvp = Boolean(existing?.rsvp_source && existing.rsvp_source !== "google_sheet");
+    const { error } = await this.client.from("invitations").update(sourcePayload(source, this.source.guestTabNames[0]!, preserveLiveRsvp)).eq("id", id);
     assertNoError(error);
   }
 

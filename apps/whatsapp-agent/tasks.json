@@ -1,0 +1,11 @@
+{
+  "movie-server-health": {
+    "description": "Check whether the local Movie Server API is healthy",
+    "command": [
+      "/usr/bin/curl",
+      "--fail",
+      "--silent",
+      "http://127.0.0.1:3001/health"
+    ]
+  }
+}

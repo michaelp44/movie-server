@@ -52,6 +52,9 @@ export const config = {
   // Downloads
   downloadDir: optionalEnv('DOWNLOAD_DIR', './downloads'),
   pollIntervalMs: optionalEnvNumber('POLL_INTERVAL_MS', DEFAULTS.POLL_INTERVAL_MS),
+  autoDownloadCheckIntervalMs: optionalEnvNumber('AUTO_DOWNLOAD_CHECK_INTERVAL_MS', 24 * 60 * 60 * 1000),
+  plexCompatibleAudioEnabled: optionalEnvBoolean('PLEX_COMPATIBLE_AUDIO_ENABLED', false),
+  plexCompatibleAudioArchiveDir: optionalEnv('PLEX_COMPATIBLE_AUDIO_ARCHIVE_DIR', ''),
   
   // Upload
   maxUploadSizeBytes: optionalEnvNumber('MAX_UPLOAD_SIZE_BYTES', DEFAULTS.MAX_UPLOAD_SIZE_BYTES),
@@ -74,6 +77,25 @@ export const config = {
     token: optionalEnv('PLEX_TOKEN', ''),
   },
 
+  // Jellyfin integration
+  jellyfin: {
+    enabled: optionalEnvBoolean('JELLYFIN_ENABLED', false),
+    host: optionalEnv('JELLYFIN_HOST', 'http://localhost:8096'),
+    apiKey: optionalEnv('JELLYFIN_API_KEY', ''),
+    userId: optionalEnv('JELLYFIN_USER_ID', ''),
+  },
+
+  // TMDB discovery integration
+  tmdb: {
+    apiKey: optionalEnv('TMDB_API_KEY', ''),
+  },
+
+  // OpenAI prompt understanding for recommendations
+  openai: {
+    apiKey: optionalEnv('OPENAI_API_KEY', ''),
+    model: optionalEnv('OPENAI_MODEL', 'gpt-4.1-mini'),
+  },
+
   // ntfy push notifications
   ntfy: {
     enabled: optionalEnvBoolean('NTFY_ENABLED', false),
@@ -84,4 +106,3 @@ export const config = {
 } as const;
 
 export type Config = typeof config;
-

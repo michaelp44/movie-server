@@ -4,13 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CalendarDays,
+  ChefHat,
   Gift,
   Home,
   Images,
   Info,
-  Menu as MenuIcon,
-  Music2,
   UtensilsCrossed,
   X,
 } from "lucide-react";
@@ -18,13 +16,11 @@ import {
 const primaryItems = [
   { href: "/", label: "בית", icon: Home },
   { href: "/table", label: "שולחן", icon: UtensilsCrossed },
-  { href: "/menu", label: "תפריט", icon: MenuIcon },
+  { href: "/menu", label: "תפריט", icon: ChefHat },
   { href: "/share", label: "שיתוף", icon: Images },
 ] as const;
 
 const moreItems = [
-  { href: "/schedule", label: "לו״ז הערב", description: "כל הרגעים החשובים", icon: CalendarDays },
-  { href: "/story", label: "הסיפור שלנו", description: "הדרך שלנו עד לכאן", icon: Music2 },
   { href: "/info", label: "מידע שימושי", description: "ניווט, חניה וכל מה שצריך", icon: Info },
   { href: "/gift", label: "מתנה לזוג", description: "למי שרוצה לפנק", icon: Gift },
 ] as const;

@@ -29,6 +29,41 @@ export interface Download {
   errorMessage?: string;
 }
 
+export interface AdminDownload extends Download {
+  userId: string;
+  username: string;
+}
+
+export type WantedDownloadStatus = 'ACTIVE' | 'DOWNLOADED' | 'CANCELED' | 'FAILED';
+export type WantedDownloadQuality = '720p' | '1080p' | '2160p';
+
+export interface WantedDownload {
+  id: string;
+  title: string;
+  year?: number;
+  mediaType: 'movie' | 'show';
+  minQuality: WantedDownloadQuality;
+  status: WantedDownloadStatus;
+  lastCheckedAt?: string;
+  lastError?: string;
+  matchedTitle?: string;
+  matchedQuality?: string;
+  downloadId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WantedDownloadAvailability {
+  itemId: string;
+  title: string;
+  year?: number;
+  hasGoodQuality: boolean;
+  alreadyWanted: boolean;
+  canAddWanted: boolean;
+  matchedTitle?: string;
+  matchedQuality?: string;
+}
+
 // Library file model
 export interface LibraryFile {
   id: string;
@@ -38,6 +73,33 @@ export interface LibraryFile {
   mimeType: string;
   createdAt: string;
   downloadId?: string;
+}
+
+// Recommendation models
+export interface RecommendationItem {
+  id: string;
+  title: string;
+  type: 'movie' | 'show' | 'episode' | 'file' | 'download';
+  year?: number;
+  rating?: number;
+  genres: string[];
+  reason?: string;
+  posterUrl?: string;
+  overview?: string;
+  externalUrl?: string;
+  durationMs?: number;
+  watchedAt?: string;
+  viewCount?: number;
+  progressPercent?: number;
+  filePath?: string;
+  source: 'plex' | 'jellyfin' | 'tmdb' | 'library' | 'download';
+}
+
+export interface RecommendationSection {
+  id: string;
+  title: string;
+  reason?: string;
+  items: RecommendationItem[];
 }
 
 // Search result from provider
@@ -50,6 +112,12 @@ export interface ProviderSearchResult {
   provider: string;
   year?: number;
   quality?: string;
+  compatibility?: {
+    score: number;
+    level: 'best' | 'ok' | 'risky';
+    label: string;
+    reasons: string[];
+  };
 }
 
 // User model (without password)
@@ -57,6 +125,14 @@ export interface User {
   id: string;
   username: string;
   createdAt: string;
+}
+
+export interface AdminOverview {
+  users: User[];
+  downloads: AdminDownload[];
+  settings: {
+    signupEnabled: boolean;
+  };
 }
 
 // Audit log entry
@@ -114,4 +190,3 @@ export interface PaginatedResponse<T> {
   pageSize: number;
   totalPages: number;
 }
-

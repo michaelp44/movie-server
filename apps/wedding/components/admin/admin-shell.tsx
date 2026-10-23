@@ -7,6 +7,9 @@ import {
   Menu,
   MonitorPlay,
   QrCode,
+  Send,
+  PhoneCall,
+  ClipboardCheck,
   Settings,
   Sheet,
   TableProperties,
@@ -20,6 +23,10 @@ import { logoutAdminAction } from "@/app/actions/admin-auth";
 const links = [
   { href: "/admin", label: "סקירה", icon: LayoutDashboard },
   { href: "/admin/guests", label: "אורחים", icon: Users },
+  { href: "/admin/rsvp", label: "אישורי הגעה", icon: Send },
+  { href: "/admin/rsvp/campaigns", label: "קמפיינים", icon: Send },
+  { href: "/admin/rsvp/calls", label: "תור שיחות", icon: PhoneCall },
+  { href: "/admin/check-in", label: "כניסת אורחים", icon: ClipboardCheck },
   { href: "/admin/tables", label: "שולחנות", icon: TableProperties },
   { href: "/admin/sync", label: "סנכרון", icon: Sheet },
   { href: "/admin/photos", label: "תמונות", icon: Camera },
@@ -31,7 +38,7 @@ const links = [
 ];
 
 const mobileLinks = links.filter(({ href }) =>
-  ["/admin", "/admin/guests", "/admin/photos", "/admin/live-wall", "/admin/guestbook"].includes(href),
+  ["/admin", "/admin/rsvp", "/admin/check-in", "/admin/live-wall", "/admin/guests"].includes(href),
 );
 
 export function AdminShell({ children, email }: { children: ReactNode; email: string }) {
