@@ -509,7 +509,7 @@ export class WhatsAppTransport implements RecentMessageReader {
       let payload: { operationId?: string; recipient?: string; message?: string; mediaUrl?: string | null };
       try { payload = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
       catch { return sendJson(400, { error: 'invalid json' }); }
-      if (!/^[0-9a-f-]{36}$/i.test(payload.operationId ?? '') || !/^972\d{8,9}$/.test(payload.recipient ?? '') || !payload.message || payload.message.length > 4096 || (payload.mediaUrl != null && payload.mediaUrl !== 'https://wedding.my-rem.com/images/wedding-invitation.jpg')) {
+      if (!/^[0-9a-f-]{36}$/i.test(payload.operationId ?? '') || !/^[1-9]\d{7,14}$/.test(payload.recipient ?? '') || !payload.message || payload.message.length > 4096 || (payload.mediaUrl != null && payload.mediaUrl !== 'https://wedding.my-rem.com/images/wedding-invitation.jpg')) {
         return sendJson(400, { error: 'invalid send request' });
       }
       const previous = this.weddingSendResults.get(payload.operationId!);

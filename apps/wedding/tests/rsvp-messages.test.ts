@@ -7,6 +7,11 @@ describe("RSVP WhatsApp messages", () => {
     expect(whatsappRecipient("0501234567")).toBeNull();
   });
 
+  it("accepts canonical international numbers for WhatsApp", () => {
+    expect(whatsappRecipient("+3903332990531")).toBe("3903332990531");
+    expect(whatsappRecipient("+13363125549")).toBe("13363125549");
+  });
+
   it("builds a personalized invitation without exposing a phone number", () => {
     const body = weddingMessage({ kind: "invitation", displayName: "דניאל ונועה", secureToken: "safe_token" });
     expect(body).toContain("דניאל ונועה");

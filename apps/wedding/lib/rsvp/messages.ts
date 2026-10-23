@@ -10,7 +10,7 @@ export function weddingMessageMediaUrl(kind: WeddingMessageKind): string | null 
 
 export function whatsappRecipient(normalizedPhone: string): string | null {
   const digits = normalizedPhone.replace(/\D/g, "");
-  return /^972\d{8,9}$/.test(digits) ? digits : null;
+  return /^[1-9]\d{7,14}$/.test(digits) ? digits : null;
 }
 
 export function personalizedRsvpUrl(token: string): string {

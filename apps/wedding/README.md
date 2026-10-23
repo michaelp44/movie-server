@@ -190,7 +190,7 @@ The command requires the local Supabase variables. It creates readable JSON file
 
 ## Guest identification and sessions
 
-Israeli numbers are normalized to an E.164-style value such as `+972501234567`. Formatting variants such as `050-123-4567`, `050 123 4567`, `972501234567`, and `+972501234567` resolve to the same value.
+Phone numbers are stored in E.164 format, such as `+972501234567` or `+393339310560`. Israeli local formats (for example `050-123-4567`, `972501234567`) normalize to `+972501234567`; international numbers must include a country code (`+` or `00`).
 
 Lookup happens only on the server. A successful match creates a signed session containing only the invitation UUID, issue/expiry times, and a random nonce. The cookie is HttpOnly, SameSite=Lax, Secure in production, and expires after 180 days. It contains no name or phone number. “זה לא אני” clears it.
 

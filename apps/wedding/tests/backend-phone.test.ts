@@ -14,7 +14,7 @@ describe("normalizeIsraeliPhone", () => {
     expect(normalizeIsraeliPhone(input)).toBe("+972501234567");
   });
 
-  it.each(["", "1234", "+12025550123", "050-ABC-4567", "0500000000", "++972501234567"])(
+  it.each(["", "1234", "050-ABC-4567", "0500000000", "++972501234567", "+00012345678", "+1234567", "+1234567890123456"])(
     "rejects invalid input %s",
     (input) => expect(normalizeIsraeliPhone(input)).toBeNull(),
   );
@@ -22,5 +22,15 @@ describe("normalizeIsraeliPhone", () => {
   it("recognizes canonical Israeli values", () => {
     expect(isCanonicalIsraeliPhone("+972501234567")).toBe(true);
     expect(isCanonicalIsraeliPhone("0501234567")).toBe(false);
+  });
+
+  it.each([
+    ["+380674931667", "+380674931667"],
+    ["=+393339310560", "+393339310560"],
+    ["+1 (336) 312-5549", "+13363125549"],
+    ["004917662159796", "+4917662159796"],
+    ["+41783021929", "+41783021929"],
+  ])("normalizes international number %s", (input, expected) => {
+    expect(normalizeIsraeliPhone(input)).toBe(expected);
   });
 });

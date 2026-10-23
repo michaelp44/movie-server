@@ -18,6 +18,14 @@ describe("Google Sheets mapping", () => {
     expect(normalizeSheetPhone(phone)).toBe("+972501234567");
   });
 
+  it.each([
+    ["=+380674931667", "+380674931667"],
+    ["=+393339310560", "+393339310560"],
+    ["=+1 (336) 312-5549", "+13363125549"],
+  ])("maps explicit international number %s", (phone, normalizedPhone) => {
+    expect(normalizeSheetPhone(phone)).toBe(normalizedPhone);
+  });
+
   it("maps by raw headers regardless of column position", () => {
     const result = mapGuestSheet([
       ["סטטוס הגעה", "כמות מוזמנים", "שם להזמנה", "קבוצה", "טלפון", "מספר מאושרים", "עמודת הערות"],

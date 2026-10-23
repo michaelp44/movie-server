@@ -113,7 +113,7 @@ function normalizedIdentityName(value: string): string {
   return cleanCell(value).toLocaleLowerCase("he").replace(/\s+/g, " ");
 }
 
-/** Returns an E.164-like Israeli canonical value, for example +972501234567. */
+/** Returns an E.164 canonical value, for example +972501234567 or +390... . */
 export function normalizeSheetPhone(input: unknown): string | null {
   return normalizeIsraeliPhone(cleanCell(input));
 }
@@ -297,7 +297,7 @@ export function mapGuestSheet(values: string[][], config: SheetMappingConfig = {
         rowNumber: row.rowNumber,
         field: "primaryPhone",
         code: "invalid_phone",
-        message: `Row ${row.rowNumber}: the phone number is not a valid Israeli number.`,
+        message: `Row ${row.rowNumber}: the phone number is not a valid international number.`,
       });
     }
     const explicitSourceId = cell(row.values, resolvedHeaders, "sourceRowId");
