@@ -475,6 +475,60 @@ export async function setWhatsappCampaignStatusAction(formData: FormData): Promi
   withNotice("/admin/rsvp/campaigns", status === "paused" ? "הקמפיין הושהה." : status === "cancelled" ? "הקמפיין בוטל." : "הקמפיין חודש.");
 }
 
+export async function retryFailedWhatsappCampaignAction(formData: FormData): Promise<void> {
+  const admin = await requireAdmin();
+  const campaignId = z.string().uuid().parse(formData.get("campaignId"));
+  const db = createAdminDataClient();
+  const source = await db.from("message_campaigns")
+    .select("name, message_kind, audience, guest_group_filter, guest_side_filter, min_delay_seconds, max_delay_seconds")
+    .eq("id", campaignId)
+    .single();
+  assertNoError(source.error);
+  if (!source.data) withNotice("/admin/rsvp/campaigns", "הקמפיין לא נמצא.");
+
+  const failed = await db.from("message_campaign_recipients")
+    .select("invitation_id")
+    .eq("campaign_id", campaignId)
+    .eq("status", "failed");
+  assertNoError(failed.error);
+  const failedIds = [...new Set((failed.data ?? []).map((row) => row.invitation_id))];
+  if (!failedIds.length) withNotice("/admin/rsvp/campaigns", "אין נמענים שנכשלו בקמפיין הזה.");
+
+  // A failure can be ambiguous: never enqueue anyone who has since received this
+  // message successfully, even if the original attempt was recorded as failed.
+  const successful = await db.from("message_deliveries")
+    .select("invitation_id")
+    .eq("message_kind", source.data.message_kind)
+    .eq("status", "sent")
+    .in("invitation_id", failedIds);
+  assertNoError(successful.error);
+  const alreadySent = new Set((successful.data ?? []).map((row) => row.invitation_id));
+  const retryIds = failedIds.filter((id) => !alreadySent.has(id));
+  if (!retryIds.length) withNotice("/admin/rsvp/campaigns", "כל הנמענים שנכשלו כבר קיבלו מאז את ההודעה; לא נוצר תור נוסף.");
+
+  const now = new Date().toISOString();
+  const created = await db.from("message_campaigns").insert({
+    name: `שליחה חוזרת: ${source.data.name}`.slice(0, 120),
+    message_kind: source.data.message_kind,
+    audience: source.data.audience,
+    guest_group_filter: source.data.guest_group_filter,
+    guest_side_filter: source.data.guest_side_filter,
+    status: "queued",
+    min_delay_seconds: source.data.min_delay_seconds,
+    max_delay_seconds: source.data.max_delay_seconds,
+    scheduled_for: now,
+    next_run_at: now,
+    created_by: admin.id,
+  }).select("id").single();
+  assertNoError(created.error);
+  assertNoError((await db.from("message_campaign_recipients").insert(
+    retryIds.map((invitationId) => ({ campaign_id: created.data!.id, invitation_id: invitationId })),
+  )).error);
+
+  revalidatePath("/admin/rsvp/campaigns");
+  withNotice("/admin/rsvp/campaigns", `נוצר תור שליחה חוזרת ל-${retryIds.length} נמענים שנכשלו בלבד. השליחה תתחיל אוטומטית; ודא שהחיבור המקומי ל-WhatsApp זמין.`);
+}
+
 const callResultSchema = z.object({
   invitationId: z.string().uuid(),
   nextInvitationId: z.string().uuid().optional().or(z.literal("")),

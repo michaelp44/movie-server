@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { setWhatsappCampaignStatusAction } from "@/app/actions/admin";
 import { CampaignCreateForm } from "@/components/admin/campaign-create-form";
+import { CampaignRetryButton } from "@/components/admin/campaign-retry-button";
 import { AdminNotice } from "@/components/admin/notice";
 import { PageHeader } from "@/components/admin/page-header";
 import { createAdminDataClient, requireAdmin } from "@/lib/admin";
@@ -36,6 +37,7 @@ export default async function CampaignsPage({ searchParams }: { searchParams: Pr
         return <article key={campaign.id} className="rounded-2xl border border-black/10 bg-white p-4 sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="font-bold">{campaign.name}</h2><p className="mt-1 text-xs text-black/55">{kindLabel[campaign.message_kind]} · {campaignAudienceLabel(campaign.audience as CampaignAudience)} · {campaignGroupLabel(campaign.guest_group_filter, campaign.guest_side_filter)} · {campaign.min_delay_seconds}–{campaign.max_delay_seconds} שניות</p></div><span className="rounded-full bg-[#f4f1e9] px-3 py-1 text-xs font-bold">{statusLabel[campaign.status] ?? campaign.status}</span></div>
           <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm"><Metric label="נשלחו" value={sent} /><Metric label="בתור" value={remaining} /><Metric label="נכשלו" value={failed} /></div>
+          {failed > 0 ? <div className="mt-4"><CampaignRetryButton campaignId={campaign.id} count={failed} /></div> : null}
           {campaign.next_run_at ? <p className="mt-3 text-xs text-black/50">הפעולה הבאה: {new Intl.DateTimeFormat("he-IL", { dateStyle: "short", timeStyle: "medium", timeZone: "Asia/Jerusalem" }).format(new Date(campaign.next_run_at))}</p> : null}
           {(["queued", "running", "paused"] as string[]).includes(campaign.status) ? <div className="mt-4 flex flex-wrap gap-2">
             <CampaignButton id={campaign.id} status={campaign.status === "paused" ? "queued" : "paused"} label={campaign.status === "paused" ? "המשך" : "עצירה"} />
