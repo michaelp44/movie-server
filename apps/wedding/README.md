@@ -50,7 +50,7 @@ Important locations:
 
 ## Local development
 
-Requirements: Node.js 22 or newer and npm.
+Requirements: Node.js 22.x and npm.
 
 ```bash
 cd apps/wedding
@@ -317,19 +317,27 @@ Recommended project settings:
 - Repository: the existing movie-server repository
 - Root Directory: `apps/wedding`
 - Framework Preset: Next.js
-- Install Command: `npm install --workspaces=false`
-- Build Command: `npm run build`
+- Node.js Version: `22.x` (also pinned in this app's `package.json`)
+- Install Command: `npm ci --workspaces=false --include=dev --no-audit --no-fund`
+- Build Command: `npm run build --workspaces=false`
 - Production branch: `main`
+
+The install/build commands are committed in `apps/wedding/vercel.json`. The wedding app has its own lockfile and does not depend on sibling workspaces. Isolating its install avoids the repository-level WhatsApp/native dependencies and `patch-package` postinstall. Include development dependencies because Tailwind/PostCSS and TypeScript are required for the production build. When changing dependencies, update both the app's standalone lockfile (`npm install --package-lock-only --workspaces=false` from this directory) and the repository lockfile.
 
 Add all production environment variables before the first production deployment. Keep `WEDDING_DEMO_MODE=false`.
 
-CLI equivalent from this directory after authenticating Vercel:
+Normal releases use the existing GitHub integration: commit the changes, then push `main`. Vercel builds only the wedding app and assigns the wedding domain after the build succeeds. A successful Git push alone does not mean the new version is live; check the deployment status and domain alias.
 
 ```bash
-npx vercel link
-npx vercel --prod
-npx vercel domains add wedding.my-rem.com
-npx vercel domains inspect wedding.my-rem.com
+git push origin main
+npx vercel project inspect shoval-michael-wedding
+npx vercel inspect https://wedding.my-rem.com
+```
+
+The repository-root `.vercel/project.json` belongs to a different project. Do not deploy from that link or change it. For an emergency CLI deployment from the repository root, explicitly select the wedding project without relinking:
+
+```bash
+VERCEL_ORG_ID=team_LAOx3dAWUsQrmkhR3GKiM8wH VERCEL_PROJECT_ID=prj_xsjTWIn6VyZPON1HOtUBjeOBvhYi npx vercel --prod
 ```
 
 ### `wedding.my-rem.com`
