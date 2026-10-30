@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Leaf, Sparkles, WheatOff } from "lucide-react";
+import { Leaf, WheatOff } from "lucide-react";
 import {
   weddingConfig,
   type DietaryTag,
@@ -70,13 +70,6 @@ export function MenuView() {
 
   return (
     <div>
-      {menu.note ? (
-        <div className="mb-8 flex items-start gap-3 rounded-2xl border border-[#b3915d]/20 bg-[#eee3cf]/70 px-4 py-3 text-sm leading-6 text-[#694e2b]">
-          <Sparkles aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
-          <p>{menu.note} <a className="font-semibold underline underline-offset-4" href="https://www.591.co.il/גלריה/" target="_blank" rel="noreferrer">לגלריה הקולינרית של 5.91</a></p>
-        </div>
-      ) : null}
-
       <nav aria-label="קטגוריות התפריט" className="-mx-5 mb-10 overflow-x-auto px-5 [scrollbar-width:none] sm:mx-0 sm:px-0">
         <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap">
           {menu.categories.map((category) => (
