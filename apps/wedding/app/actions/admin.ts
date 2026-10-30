@@ -13,7 +13,7 @@ import { synchronizeWeddingGuests } from "@/lib/sync";
 import { WEDDING_MEDIA_BUCKET } from "@/lib/storage";
 import { parseTableNumber } from "@/lib/table";
 import { weddingGuestSideFromSourceTab, weddingMessage, weddingMessageMediaUrl, whatsappRecipient } from "@/lib/rsvp/messages";
-import { campaignCandidates, parseCampaignGroupSelection } from "@/lib/rsvp/campaign-queue";
+import { campaignCandidates, parseCampaignGroupSelections } from "@/lib/rsvp/campaign-queue";
 
 function withNotice(path: string, notice: string): never {
   redirect(`${path}${path.includes("?") ? "&" : "?"}notice=${encodeURIComponent(notice)}`);
@@ -433,7 +433,7 @@ const campaignSchema = z.object({
   name: z.string().trim().min(2).max(120),
   messageKind: z.enum(["invitation", "reminder", "event_details", "table_assignment", "thank_you"]),
   audience: z.enum(["all_contactable", "pending_rsvp", "confirmed", "declined"]),
-  guestGroupSelection: z.string().trim().max(200),
+  guestGroupSelections: z.array(z.string().trim().max(200)).min(1).max(50),
   minDelaySeconds: z.coerce.number().int().min(30).max(900),
   maxDelaySeconds: z.coerce.number().int().min(30).max(1800),
   confirmation: z.literal("queue"),
@@ -443,19 +443,18 @@ export async function createWhatsappCampaignAction(formData: FormData): Promise<
   const admin = await requireAdmin();
   const parsed = campaignSchema.safeParse({
     name: formData.get("name"), messageKind: formData.get("messageKind"), audience: formData.get("audience"),
-    guestGroupSelection: formData.get("guestGroupSelection"),
+    guestGroupSelections: formData.getAll("guestGroupSelections").filter((value): value is string => typeof value === "string"),
     minDelaySeconds: formData.get("minDelaySeconds"), maxDelaySeconds: formData.get("maxDelaySeconds"), confirmation: formData.get("confirmation"),
   });
   if (!parsed.success) withNotice("/admin/rsvp/campaigns", parsed.error.issues[0]?.message ?? "פרטי הקמפיין אינם תקינים.");
-  const groupSelection = parseCampaignGroupSelection(parsed.data.guestGroupSelection);
-  if (!groupSelection) withNotice("/admin/rsvp/campaigns", "צריך לבחור קבוצה וצד תקינים.");
-  const { groupFilter: guestGroupFilter, sideFilter: guestSideFilter } = groupSelection;
-  const candidates = await campaignCandidates(parsed.data.audience, parsed.data.messageKind, guestGroupFilter, guestSideFilter);
+  const groupSelections = parseCampaignGroupSelections(parsed.data.guestGroupSelections);
+  if (!groupSelections) withNotice("/admin/rsvp/campaigns", "צריך לבחור קבוצה אחת לפחות, או את כל הקטגוריות בלבד.");
+  const candidates = await campaignCandidates(parsed.data.audience, parsed.data.messageKind, null, null, parsed.data.guestGroupSelections);
   if (!candidates.length) withNotice("/admin/rsvp/campaigns", "לא נמצאו נמענים מתאימים שלא קיבלו כבר את ההודעה הזו.");
   const db = createAdminDataClient();
   const now = new Date().toISOString();
   const created = await db.from("message_campaigns").insert({
-    name: parsed.data.name, message_kind: parsed.data.messageKind, audience: parsed.data.audience, guest_group_filter: guestGroupFilter, guest_side_filter: guestSideFilter, status: "queued",
+    name: parsed.data.name, message_kind: parsed.data.messageKind, audience: parsed.data.audience, guest_group_filter: null, guest_side_filter: null, guest_group_selections: parsed.data.guestGroupSelections, status: "queued",
     min_delay_seconds: parsed.data.minDelaySeconds, max_delay_seconds: parsed.data.maxDelaySeconds,
     scheduled_for: now, next_run_at: now, created_by: admin.id,
   }).select("id").single();
@@ -482,7 +481,7 @@ export async function retryFailedWhatsappCampaignAction(formData: FormData): Pro
   const campaignId = z.string().uuid().parse(formData.get("campaignId"));
   const db = createAdminDataClient();
   const source = await db.from("message_campaigns")
-    .select("name, message_kind, audience, guest_group_filter, guest_side_filter, min_delay_seconds, max_delay_seconds")
+    .select("name, message_kind, audience, guest_group_filter, guest_side_filter, guest_group_selections, min_delay_seconds, max_delay_seconds")
     .eq("id", campaignId)
     .single();
   assertNoError(source.error);
@@ -515,6 +514,7 @@ export async function retryFailedWhatsappCampaignAction(formData: FormData): Pro
     audience: source.data.audience,
     guest_group_filter: source.data.guest_group_filter,
     guest_side_filter: source.data.guest_side_filter,
+    guest_group_selections: source.data.guest_group_selections,
     status: "queued",
     min_delay_seconds: source.data.min_delay_seconds,
     max_delay_seconds: source.data.max_delay_seconds,

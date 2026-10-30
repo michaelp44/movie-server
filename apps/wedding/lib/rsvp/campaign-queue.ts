@@ -39,6 +39,34 @@ export function parseCampaignGroupSelection(selection: string): { groupFilter: s
   }
 }
 
+type ParsedCampaignGroup = { groupFilter: string; sideFilter: CampaignGuestSide };
+
+export function parseCampaignGroupSelections(selections: string[]): ParsedCampaignGroup[] | null {
+  if (!selections.length || selections.length > 50 || new Set(selections).size !== selections.length) return null;
+  if (selections.includes("all")) return selections.length === 1 ? [] : null;
+  const parsed = selections.map(parseCampaignGroupSelection);
+  if (parsed.some((selection) => !selection || selection.sideFilter === null || selection.groupFilter === null)) return null;
+  return parsed.map((selection) => ({ groupFilter: selection!.groupFilter!, sideFilter: selection!.sideFilter! }));
+}
+
+export function campaignGroupSelectionsLabel(selections: string[] | null, legacyGroup: string | null, legacySide: CampaignGuestSide | null) {
+  if (!selections) return campaignGroupLabel(legacyGroup, legacySide);
+  const filters = parseCampaignGroupSelections(selections);
+  if (!filters) return "בחירת קבוצות";
+  if (selections.includes("all")) return "כל הקטגוריות · כל הצדדים";
+  const labels = filters.map(({ groupFilter, sideFilter }) => `${groupFilter || "ללא קטגוריה"} · ${campaignSideLabel(sideFilter)}`);
+  return labels.length > 2 ? `${labels.length} קבוצות · ${labels.slice(0, 2).join(", ")} ועוד` : labels.join(" + ");
+}
+
+export function campaignGroupSelectionMatches(selections: string[], group: string | null, sourceTab: string | null) {
+  if (selections.includes("all")) return selections.length === 1;
+  const filters = parseCampaignGroupSelections(selections);
+  if (!filters) return false;
+  const normalizedGroup = group?.trim() || "";
+  const side = guestSideFromSourceTab(sourceTab);
+  return filters.some((filter) => filter.groupFilter === normalizedGroup && filter.sideFilter === side);
+}
+
 export function campaignAudienceLabel(audience: CampaignAudience) {
   return ({ all_contactable: "כל בעלי המספר התקין", pending_rsvp: "ממתינים לתשובה", confirmed: "אישרו הגעה", declined: "לא מגיעים" } as const)[audience];
 }
@@ -48,12 +76,14 @@ export function campaignGroupLabel(group: string | null, side: CampaignGuestSide
   return `${groupLabel} · ${campaignSideLabel(side)}`;
 }
 
-export function campaignRecipientMatches(audience: CampaignAudience, groupFilter: string | null, status: string, group: string | null, sideFilter: CampaignGuestSide | null = null, sourceTab: string | null = null) {
+export function campaignRecipientMatches(audience: CampaignAudience, groupFilter: string | null, status: string, group: string | null, sideFilter: CampaignGuestSide | null = null, sourceTab: string | null = null, selections: string[] | null = null) {
   const expectedStatus = audience === "pending_rsvp" ? "pending" : audience;
   const statusMatches = audience === "all_contactable" || status === expectedStatus;
   const normalizedGroup = group?.trim() || "";
-  const sideMatches = sideFilter === null || guestSideFromSourceTab(sourceTab) === sideFilter;
-  return statusMatches && sideMatches && (groupFilter === null || normalizedGroup === groupFilter);
+  const selectionMatches = selections !== null
+    ? campaignGroupSelectionMatches(selections, group, sourceTab)
+    : (sideFilter === null || guestSideFromSourceTab(sourceTab) === sideFilter) && (groupFilter === null || normalizedGroup === groupFilter);
+  return statusMatches && selectionMatches;
 }
 
 export async function listCampaignGuestGroups() {
@@ -79,21 +109,24 @@ export function nextCampaignDelaySeconds(minimum: number, maximum: number, rando
   return min + Math.floor(random * (max - min + 1));
 }
 
-export async function campaignCandidates(audience: CampaignAudience, kind: WeddingMessageKind, guestGroupFilter: string | null = null, guestSideFilter: CampaignGuestSide | null = null) {
+export async function campaignCandidates(audience: CampaignAudience, kind: WeddingMessageKind, guestGroupFilter: string | null = null, guestSideFilter: CampaignGuestSide | null = null, guestGroupSelections: string[] | null = null) {
   const db = createAdminClient();
   let query = db.from("invitations")
-    .select("id, display_name, normalized_phone, secure_token, table_number, rsvp_status, contact_opt_out")
+    .select("id, display_name, normalized_phone, secure_token, table_number, rsvp_status, contact_opt_out, guest_group, source_tab")
     .not("normalized_phone", "is", null)
     .eq("contact_opt_out", false)
     .eq("missing_from_source", false);
   if (audience !== "all_contactable") query = query.eq("rsvp_status", audience === "pending_rsvp" ? "pending" : audience);
-  if (guestGroupFilter === "") query = query.or("guest_group.is.null,guest_group.eq.");
-  else if (guestGroupFilter !== null) query = query.eq("guest_group", guestGroupFilter);
-  if (guestSideFilter === "michael" || guestSideFilter === "shoval") query = query.eq("source_tab", sideSourceTabs[guestSideFilter]);
-  else if (guestSideFilter === "unassigned") query = query.is("source_tab", null);
+  if (guestGroupSelections === null) {
+    if (guestGroupFilter === "") query = query.or("guest_group.is.null,guest_group.eq.");
+    else if (guestGroupFilter !== null) query = query.eq("guest_group", guestGroupFilter);
+    if (guestSideFilter === "michael" || guestSideFilter === "shoval") query = query.eq("source_tab", sideSourceTabs[guestSideFilter]);
+    else if (guestSideFilter === "unassigned") query = query.is("source_tab", null);
+  }
   const { data, error } = await query.order("display_name");
   if (error) throw new Error(error.message);
-  const valid = (data ?? []).filter((item) => item.normalized_phone && whatsappRecipient(item.normalized_phone));
+  const valid = (data ?? []).filter((item) => item.normalized_phone && whatsappRecipient(item.normalized_phone)
+    && (guestGroupSelections === null || campaignGroupSelectionMatches(guestGroupSelections, item.guest_group, item.source_tab)));
   if (!valid.length) return [];
   const { data: sent, error: sentError } = await db.from("message_deliveries")
     .select("invitation_id")
@@ -109,7 +142,7 @@ export async function processNextCampaignRecipient(now = new Date()) {
   if (!isFallbackConfigured()) return { outcome: "unavailable" as const };
   const db = createAdminClient();
   const { data: campaigns, error } = await db.from("message_campaigns")
-    .select("id, message_kind, audience, guest_group_filter, guest_side_filter, min_delay_seconds, max_delay_seconds")
+    .select("id, message_kind, audience, guest_group_filter, guest_side_filter, guest_group_selections, min_delay_seconds, max_delay_seconds")
     .in("status", ["queued", "running"])
     .lte("next_run_at", now.toISOString())
     .order("next_run_at")
@@ -139,7 +172,7 @@ export async function processNextCampaignRecipient(now = new Date()) {
     .eq("id", recipientRow.invitation_id).maybeSingle();
   if (invitationError) throw new Error(invitationError.message);
   const recipient = invitation?.normalized_phone ? whatsappRecipient(invitation.normalized_phone) : null;
-  if (!invitation || !recipient || invitation.contact_opt_out || !campaignRecipientMatches(campaign.audience, campaign.guest_group_filter, invitation.rsvp_status, invitation.guest_group, campaign.guest_side_filter, invitation.source_tab)) {
+  if (!invitation || !recipient || invitation.contact_opt_out || !campaignRecipientMatches(campaign.audience, campaign.guest_group_filter, invitation.rsvp_status, invitation.guest_group, campaign.guest_side_filter, invitation.source_tab, campaign.guest_group_selections)) {
     await db.from("message_campaign_recipients").update({ status: "skipped", last_error: "Recipient no longer matches the campaign audience.", processed_at: now.toISOString(), updated_at: now.toISOString() }).eq("id", recipientRow.id);
   } else {
     const priorDelivery = await db.from("message_deliveries").select("id").eq("invitation_id", invitation.id).eq("message_kind", campaign.message_kind).eq("status", "sent").limit(1).maybeSingle();

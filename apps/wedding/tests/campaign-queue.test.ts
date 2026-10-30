@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { campaignGroupLabel, campaignRecipientMatches, nextCampaignDelaySeconds, parseCampaignGroupSelection } from "@/lib/rsvp/campaign-queue";
+import { campaignGroupLabel, campaignGroupSelectionMatches, campaignGroupSelectionsLabel, campaignRecipientMatches, nextCampaignDelaySeconds, parseCampaignGroupSelection, parseCampaignGroupSelections } from "@/lib/rsvp/campaign-queue";
 
 describe("campaign queue pacing", () => {
   it("keeps randomized delays inside the configured inclusive range", () => {
@@ -41,5 +41,26 @@ describe("campaign queue pacing", () => {
     expect(campaignGroupLabel("חברים", "michael")).toBe("חברים · הצד של מיכאל");
     expect(campaignGroupLabel("חברים", "shoval")).toBe("חברים · הצד של שובל");
     expect(campaignGroupLabel("חברים")).toBe("חברים · כל הצדדים");
+  });
+
+  it("parses multiple groups across both sides and matches any selected group", () => {
+    const selections = ["group:shoval:%D7%9B%D7%93%D7%95%D7%A8%D7%A2%D7%A3", "group:michael:%D7%A2%D7%91%D7%95%D7%93%D7%94"];
+    expect(parseCampaignGroupSelections(selections)).toEqual([
+      { groupFilter: "כדורעף", sideFilter: "shoval" },
+      { groupFilter: "עבודה", sideFilter: "michael" },
+    ]);
+    expect(campaignGroupSelectionMatches(selections, "כדורעף", "מוזמנים - שובל")).toBe(true);
+    expect(campaignGroupSelectionMatches(selections, "עבודה", "מוזמנים - מיכאל")).toBe(true);
+    expect(campaignGroupSelectionMatches(selections, "משפחה", "מוזמנים - מיכאל")).toBe(false);
+    expect(campaignRecipientMatches("pending_rsvp", null, "pending", "עבודה", null, "מוזמנים - מיכאל", selections)).toBe(true);
+    expect(campaignRecipientMatches("pending_rsvp", null, "confirmed", "עבודה", null, "מוזמנים - מיכאל", selections)).toBe(false);
+  });
+
+  it("requires choosing either all groups or one or more valid individual groups", () => {
+    expect(parseCampaignGroupSelections(["all"])).toEqual([]);
+    expect(parseCampaignGroupSelections(["all", "group:shoval:%D7%97%D7%91%D7%A8%D7%99%D7%9D"])).toBeNull();
+    expect(parseCampaignGroupSelections([])).toBeNull();
+    expect(parseCampaignGroupSelections(["group:shoval:%E0%A4%A"])).toBeNull();
+    expect(campaignGroupSelectionsLabel(["group:shoval:%D7%97%D7%91%D7%A8%D7%99%D7%9D", "group:michael:%D7%A2%D7%91%D7%95%D7%93%D7%94"], null, null)).toContain("חברים");
   });
 });
