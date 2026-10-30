@@ -12,7 +12,7 @@ import { normalizeSheetPhone, verifyGoogleSheetsWriteAccess, writeSyncedInvitati
 import { synchronizeWeddingGuests } from "@/lib/sync";
 import { WEDDING_MEDIA_BUCKET } from "@/lib/storage";
 import { parseTableNumber } from "@/lib/table";
-import { weddingMessage, weddingMessageMediaUrl, whatsappRecipient } from "@/lib/rsvp/messages";
+import { weddingGuestSideFromSourceTab, weddingMessage, weddingMessageMediaUrl, whatsappRecipient } from "@/lib/rsvp/messages";
 import { campaignCandidates, parseCampaignGroupSelection } from "@/lib/rsvp/campaign-queue";
 
 function withNotice(path: string, notice: string): never {
@@ -348,7 +348,7 @@ export async function sendWeddingWhatsappAction(formData: FormData): Promise<voi
 
   const db = createAdminDataClient();
   const { data: invitation, error } = await db.from("invitations")
-    .select("id, display_name, normalized_phone, secure_token, table_number")
+    .select("id, display_name, normalized_phone, secure_token, table_number, source_tab, guest_group")
     .eq("id", parsed.data.invitationId)
     .maybeSingle();
   assertNoError(error);
@@ -363,6 +363,8 @@ export async function sendWeddingWhatsappAction(formData: FormData): Promise<voi
     displayName: invitation.display_name,
     secureToken: invitation.secure_token,
     tableNumber: invitation.table_number,
+    guestSide: weddingGuestSideFromSourceTab(invitation.source_tab),
+    guestGroup: invitation.guest_group,
   });
   const recentCutoff = new Date(Date.now() - 2 * 60_000).toISOString();
   const { data: recentDelivery, error: recentError } = await db.from("message_deliveries")

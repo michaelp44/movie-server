@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { RsvpSendForm } from "@/components/admin/rsvp-send-form";
 import { getAdminDietaryTotals, getAdminOverview, listAdminRsvpInvitations } from "@/lib/admin";
-import { weddingMessage } from "@/lib/rsvp/messages";
+import { weddingGuestSideFromSourceTab, weddingMessage } from "@/lib/rsvp/messages";
 import { rsvpCampaignPlan } from "@/lib/rsvp/campaign";
 import { rsvpDetailsSummary } from "@/lib/rsvp/details";
 
@@ -118,7 +118,7 @@ export default async function AdminRsvpPage({ searchParams }: {
                 defaultKind={invitation.rsvpStatus === "pending" && invitation.lastDelivery ? "reminder" : "invitation"}
                 disabledReason={invitation.contactOptOut ? "ההזמנה מסומנת כ'לא ליצור קשר'." : !invitation.normalizedPhone ? "לא ניתן לשלוח עד שמתקנים את מספר הטלפון." : undefined}
                 returnTo={params.contact === "unsent" ? "/admin/rsvp?contact=unsent" : "/admin/rsvp"}
-                messages={Object.fromEntries(messageKinds.map((kind) => [kind, weddingMessage({ kind, displayName: invitation.displayName, secureToken: invitation.secureToken, tableNumber: invitation.tableNumber })])) as Record<(typeof messageKinds)[number], string>}
+                messages={Object.fromEntries(messageKinds.map((kind) => [kind, weddingMessage({ kind, displayName: invitation.displayName, secureToken: invitation.secureToken, tableNumber: invitation.tableNumber, guestSide: weddingGuestSideFromSourceTab(invitation.sourceTab), guestGroup: invitation.guestGroup })])) as Record<(typeof messageKinds)[number], string>}
               />
               <div className="mt-4 flex flex-wrap gap-4 text-sm">
                 <Link href={`/rsvp/${invitation.secureToken}`} target="_blank" className="font-semibold text-[#80602f] underline">פתיחת עמוד האישור</Link>

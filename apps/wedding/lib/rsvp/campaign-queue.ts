@@ -3,7 +3,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 
 import { fallbackRequest, isFallbackConfigured } from "@/lib/fallback/client";
-import { weddingMessage, weddingMessageMediaUrl, whatsappRecipient, type WeddingMessageKind } from "@/lib/rsvp/messages";
+import { weddingGuestSideFromSourceTab, weddingMessage, weddingMessageMediaUrl, whatsappRecipient, type WeddingMessageKind } from "@/lib/rsvp/messages";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type CampaignAudience = "all_contactable" | "pending_rsvp" | "confirmed" | "declined";
@@ -147,7 +147,7 @@ export async function processNextCampaignRecipient(now = new Date()) {
     if (priorDelivery.data) {
       await db.from("message_campaign_recipients").update({ status: "skipped", last_error: "This message type was already sent.", processed_at: now.toISOString(), updated_at: now.toISOString() }).eq("id", recipientRow.id);
     } else {
-    const body = weddingMessage({ kind: campaign.message_kind, displayName: invitation.display_name, secureToken: invitation.secure_token, tableNumber: invitation.table_number });
+    const body = weddingMessage({ kind: campaign.message_kind, displayName: invitation.display_name, secureToken: invitation.secure_token, tableNumber: invitation.table_number, guestSide: weddingGuestSideFromSourceTab(invitation.source_tab), guestGroup: invitation.guest_group });
     const deliveryId = randomUUID();
     const inserted = await db.from("message_deliveries").insert({ id: deliveryId, invitation_id: invitation.id, channel: "whatsapp_web", message_kind: campaign.message_kind, status: "pending", message_body: body });
     if (inserted.error) throw new Error(inserted.error.message);

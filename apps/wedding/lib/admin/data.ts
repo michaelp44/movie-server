@@ -107,7 +107,7 @@ export async function listAdminRsvpInvitations(options: { search?: string; statu
   const db = createAdminDataClient();
   let query = db
     .from("invitations")
-    .select("id, display_name, primary_phone, normalized_phone, number_invited, number_confirmed, rsvp_status, rsvp_source, rsvp_updated_at, rsvp_note, rsvp_details, contact_opt_out, checked_in_at, table_number, guest_group, source_row_id, missing_from_source, secure_token, updated_at")
+    .select("id, display_name, primary_phone, normalized_phone, number_invited, number_confirmed, rsvp_status, rsvp_source, rsvp_updated_at, rsvp_note, rsvp_details, contact_opt_out, checked_in_at, table_number, guest_group, source_tab, source_row_id, missing_from_source, secure_token, updated_at")
     .order("display_name")
     .limit(500);
   if (options.status && ["pending", "confirmed", "declined", "maybe"].includes(options.status)) {
@@ -148,6 +148,7 @@ export async function listAdminRsvpInvitations(options: { search?: string; statu
     return {
       id: String(row.id),
       displayName: String(row.display_name),
+      sourceTab: row.source_tab,
       primaryPhone: row.primary_phone ? String(row.primary_phone) : null,
       normalizedPhone: row.normalized_phone ? String(row.normalized_phone) : null,
       numberInvited: Number(row.number_invited),

@@ -27,6 +27,7 @@ export interface AdminInvitation {
 }
 
 export interface AdminRsvpInvitation extends AdminInvitation {
+  sourceTab: string | null;
   rsvpSource: "website" | "whatsapp" | "phone" | "admin" | "google_sheet" | null;
   rsvpUpdatedAt: string | null;
   rsvpNote: string | null;

@@ -72,6 +72,10 @@ export type WeddingConfig = {
     brideHebrew: string;
     groomHebrew: string;
   };
+  invitationHosts: {
+    shovalParentsHebrew: string;
+    shovalParentsEnglish: string;
+  };
   date: string;
   dateTime: string;
   endDateTime: string;
@@ -141,6 +145,10 @@ export const weddingConfig: WeddingConfig = {
     groom: "Michael",
     brideHebrew: "שובל",
     groomHebrew: "מיכאל",
+  },
+  invitationHosts: {
+    shovalParentsHebrew: "ז׳קלין ואפריים דייני",
+    shovalParentsEnglish: "Jacqueline and Ephraim Daini",
   },
   date: "2026-12-10",
   dateTime: "2026-12-10T19:30:00+02:00",

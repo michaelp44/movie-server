@@ -1,6 +1,13 @@
 import { weddingConfig } from "@/lib/wedding-config";
 
 export type WeddingMessageKind = "invitation" | "reminder" | "event_details" | "table_assignment" | "thank_you";
+export type WeddingGuestSide = "michael" | "shoval";
+
+export function weddingGuestSideFromSourceTab(sourceTab: string | null): WeddingGuestSide | undefined {
+  if (sourceTab === "מוזמנים - מיכאל") return "michael";
+  if (sourceTab === "מוזמנים - שובל") return "shoval";
+  return undefined;
+}
 
 export function weddingMessageMediaUrl(kind: WeddingMessageKind): string | null {
   return kind === "invitation"
@@ -50,7 +57,12 @@ export function weddingMessage(input: {
   displayName: string;
   secureToken: string;
   tableNumber?: string | null;
+  guestSide?: WeddingGuestSide;
+  guestGroup?: string | null;
 }): string {
+  const shovalFamilyInvitation = input.kind === "invitation"
+    && input.guestSide === "shoval"
+    && input.guestGroup?.trim() === "משפחה";
   if (messageLanguage(input.displayName) === "en") {
     const greeting = `Hi ${englishGreetingNames(input.displayName)} ❤️`;
     const link = personalizedRsvpUrl(input.secureToken);
@@ -66,6 +78,9 @@ export function weddingMessage(input: {
     }
     if (input.kind === "thank_you") {
       return `${greeting}\nThank you for celebrating with us and making the evening unforgettable ❤️\nShoval & Michael\n${weddingConfig.domain}`;
+    }
+    if (shovalFamilyInvitation) {
+      return `${greeting}\n${weddingConfig.invitationHosts.shovalParentsEnglish} are delighted to invite you to celebrate the wedding of their daughter Shoval and Michael on ${weddingConfig.displayDate} 🥂\nPlease RSVP and find all event details here: ${link}\nCan't wait to celebrate with you ❤️`;
     }
     return `${greeting}\nShoval & Michael are getting married on ${weddingConfig.displayDate}, and we'd love to celebrate with you! 🥂\nPlease RSVP and find all event details here: ${link}\nCan't wait to celebrate with you ❤️`;
   }
@@ -84,6 +99,9 @@ export function weddingMessage(input: {
   }
   if (input.kind === "thank_you") {
     return `${greeting}\nתודה שחגגתם איתנו והפכתם את הערב שלנו לבלתי נשכח ❤️\nשובל ומיכאל\n${weddingConfig.domain}`;
+  }
+  if (shovalFamilyInvitation) {
+    return `${greeting}\n${weddingConfig.invitationHosts.shovalParentsHebrew} שמחים להזמינכם לחתונת בתם שובל ומיכאל ב־${weddingConfig.displayDate}! 🥂\nלאישור הגעה ולכל פרטי האירוע: ${link}\nמחכים לחגוג איתכם ❤️`;
   }
   return `${greeting}\nשובל ומיכאל מתחתנים ב־${weddingConfig.displayDate}, ונשמח מאוד לחגוג איתכם! 🥂\nלאישור הגעה ולכל פרטי האירוע: ${link}\nמחכים לכם ❤️`;
 }
