@@ -432,6 +432,7 @@ export async function setContactOptOutAction(formData: FormData): Promise<void> 
 const campaignSchema = z.object({
   name: z.string().trim().min(2).max(120),
   messageKind: z.enum(["invitation", "reminder", "event_details", "table_assignment", "thank_you"]),
+  messageLanguage: z.enum(["auto", "he", "en"]),
   audience: z.enum(["all_contactable", "pending_rsvp", "confirmed", "declined"]),
   guestGroupSelections: z.array(z.string().trim().max(200)).min(1).max(50),
   minDelaySeconds: z.coerce.number().int().min(30).max(900),
@@ -442,7 +443,7 @@ const campaignSchema = z.object({
 export async function createWhatsappCampaignAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   const parsed = campaignSchema.safeParse({
-    name: formData.get("name"), messageKind: formData.get("messageKind"), audience: formData.get("audience"),
+    name: formData.get("name"), messageKind: formData.get("messageKind"), messageLanguage: formData.get("messageLanguage"), audience: formData.get("audience"),
     guestGroupSelections: formData.getAll("guestGroupSelections").filter((value): value is string => typeof value === "string"),
     minDelaySeconds: formData.get("minDelaySeconds"), maxDelaySeconds: formData.get("maxDelaySeconds"), confirmation: formData.get("confirmation"),
   });
@@ -454,7 +455,7 @@ export async function createWhatsappCampaignAction(formData: FormData): Promise<
   const db = createAdminDataClient();
   const now = new Date().toISOString();
   const created = await db.from("message_campaigns").insert({
-    name: parsed.data.name, message_kind: parsed.data.messageKind, audience: parsed.data.audience, guest_group_filter: null, guest_side_filter: null, guest_group_selections: parsed.data.guestGroupSelections, status: "queued",
+    name: parsed.data.name, message_kind: parsed.data.messageKind, message_language: parsed.data.messageLanguage, audience: parsed.data.audience, guest_group_filter: null, guest_side_filter: null, guest_group_selections: parsed.data.guestGroupSelections, status: "queued",
     min_delay_seconds: parsed.data.minDelaySeconds, max_delay_seconds: parsed.data.maxDelaySeconds,
     scheduled_for: now, next_run_at: now, created_by: admin.id,
   }).select("id").single();
@@ -479,9 +480,10 @@ export async function setWhatsappCampaignStatusAction(formData: FormData): Promi
 export async function retryFailedWhatsappCampaignAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   const campaignId = z.string().uuid().parse(formData.get("campaignId"));
+  const messageLanguage = z.enum(["auto", "he", "en"]).parse(formData.get("messageLanguage") ?? "auto");
   const db = createAdminDataClient();
   const source = await db.from("message_campaigns")
-    .select("name, message_kind, audience, guest_group_filter, guest_side_filter, guest_group_selections, min_delay_seconds, max_delay_seconds")
+    .select("name, message_kind, message_language, audience, guest_group_filter, guest_side_filter, guest_group_selections, min_delay_seconds, max_delay_seconds")
     .eq("id", campaignId)
     .single();
   assertNoError(source.error);
@@ -515,6 +517,7 @@ export async function retryFailedWhatsappCampaignAction(formData: FormData): Pro
     guest_group_filter: source.data.guest_group_filter,
     guest_side_filter: source.data.guest_side_filter,
     guest_group_selections: source.data.guest_group_selections,
+    message_language: messageLanguage,
     status: "queued",
     min_delay_seconds: source.data.min_delay_seconds,
     max_delay_seconds: source.data.max_delay_seconds,

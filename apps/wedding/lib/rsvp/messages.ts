@@ -44,7 +44,7 @@ export function messageLanguage(displayName: string): "he" | "en" {
 
 function englishGreetingNames(displayName: string): string {
   const name = displayName.trim();
-  if (!name || /^(?:the\s+)?(?:family|guests|friends)\b/i.test(name)) return "everyone";
+  if (!name || /[\u0590-\u05FF]/u.test(name) || /^(?:the\s+)?(?:family|guests|friends)\b/i.test(name)) return "there";
   return name
     .split(/\s+(?:and|&|\+)\s*/i)
     .map((person) => person.trim().replace(/^[,\s]+|[,\s]+$/g, "").split(/\s+/u)[0])
@@ -56,6 +56,7 @@ export function weddingMessage(input: {
   kind: WeddingMessageKind;
   displayName: string;
   secureToken: string;
+  language?: "he" | "en";
   tableNumber?: string | null;
   guestSide?: WeddingGuestSide;
   guestGroup?: string | null;
@@ -63,7 +64,7 @@ export function weddingMessage(input: {
   const shovalFamilyInvitation = input.kind === "invitation"
     && input.guestSide === "shoval"
     && input.guestGroup?.trim() === "משפחה";
-  if (messageLanguage(input.displayName) === "en") {
+  if ((input.language ?? messageLanguage(input.displayName)) === "en") {
     const greeting = `Hi ${englishGreetingNames(input.displayName)} ❤️`;
     const link = personalizedRsvpUrl(input.secureToken);
     if (input.kind === "reminder") {

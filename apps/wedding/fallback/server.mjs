@@ -214,7 +214,7 @@ async function handleSigned(request, response, pathname) {
     return json(response, 200, { success: true });
   }
   if (request.method === "POST" && pathname === "/v1/whatsapp/send") {
-    if (!/^[0-9a-f-]{36}$/i.test(payload.operationId || "") || !/^972\d{8,9}$/.test(payload.recipient || "") || typeof payload.message !== "string" || payload.message.length < 1 || payload.message.length > 4096 || (payload.mediaUrl != null && payload.mediaUrl !== "https://wedding.my-rem.com/images/wedding-invitation.jpg")) {
+    if (!/^[0-9a-f-]{36}$/i.test(payload.operationId || "") || !/^[1-9]\d{7,14}$/.test(payload.recipient || "") || typeof payload.message !== "string" || payload.message.length < 1 || payload.message.length > 4096 || (payload.mediaUrl != null && payload.mediaUrl !== "https://wedding.my-rem.com/images/wedding-invitation.jpg")) {
       return json(response, 400, { error: "invalid send request" });
     }
     const previous = db.prepare("select provider_message_id from whatsapp_sends where operation_id = ?").get(payload.operationId);

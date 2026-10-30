@@ -142,7 +142,7 @@ export async function processNextCampaignRecipient(now = new Date()) {
   if (!isFallbackConfigured()) return { outcome: "unavailable" as const };
   const db = createAdminClient();
   const { data: campaigns, error } = await db.from("message_campaigns")
-    .select("id, message_kind, audience, guest_group_filter, guest_side_filter, guest_group_selections, min_delay_seconds, max_delay_seconds")
+    .select("id, message_kind, audience, guest_group_filter, guest_side_filter, guest_group_selections, message_language, min_delay_seconds, max_delay_seconds")
     .in("status", ["queued", "running"])
     .lte("next_run_at", now.toISOString())
     .order("next_run_at")
@@ -180,7 +180,7 @@ export async function processNextCampaignRecipient(now = new Date()) {
     if (priorDelivery.data) {
       await db.from("message_campaign_recipients").update({ status: "skipped", last_error: "This message type was already sent.", processed_at: now.toISOString(), updated_at: now.toISOString() }).eq("id", recipientRow.id);
     } else {
-    const body = weddingMessage({ kind: campaign.message_kind, displayName: invitation.display_name, secureToken: invitation.secure_token, tableNumber: invitation.table_number, guestSide: weddingGuestSideFromSourceTab(invitation.source_tab), guestGroup: invitation.guest_group });
+    const body = weddingMessage({ kind: campaign.message_kind, displayName: invitation.display_name, secureToken: invitation.secure_token, language: campaign.message_language === "auto" ? undefined : campaign.message_language, tableNumber: invitation.table_number, guestSide: weddingGuestSideFromSourceTab(invitation.source_tab), guestGroup: invitation.guest_group });
     const deliveryId = randomUUID();
     const inserted = await db.from("message_deliveries").insert({ id: deliveryId, invitation_id: invitation.id, channel: "whatsapp_web", message_kind: campaign.message_kind, status: "pending", message_body: body });
     if (inserted.error) throw new Error(inserted.error.message);

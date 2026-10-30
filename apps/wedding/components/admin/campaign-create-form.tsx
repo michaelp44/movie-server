@@ -29,6 +29,7 @@ export function CampaignCreateForm({ guestGroups }: { guestGroups: GuestGroup[] 
         <label className="grid gap-2 text-sm font-semibold">שם הקמפיין<input name="name" required maxLength={120} defaultValue="שליחת הזמנה" className="min-h-12 rounded-xl border border-black/15 px-3 font-normal" /></label>
         <label className="grid gap-2 text-sm font-semibold">סוג הודעה<select name="messageKind" className="min-h-12 rounded-xl border border-black/15 bg-white px-3 font-normal"><option value="invitation">הזמנה ראשונית</option><option value="reminder">תזכורת</option><option value="event_details">פרטי האירוע</option><option value="table_assignment">מספר שולחן</option><option value="thank_you">תודה</option></select></label>
         <label className="grid gap-2 text-sm font-semibold">קהל לפי אישור הגעה<select name="audience" className="min-h-12 rounded-xl border border-black/15 bg-white px-3 font-normal"><option value="all_contactable">כל בעלי המספר התקין</option><option value="pending_rsvp">ממתינים לתשובה</option><option value="confirmed">אישרו הגעה</option><option value="declined">לא מגיעים</option></select></label>
+        <label className="grid gap-2 text-sm font-semibold">שפת ההודעה<select name="messageLanguage" defaultValue="auto" className="min-h-12 rounded-xl border border-black/15 bg-white px-3 font-normal"><option value="auto">לפי שם המוזמן</option><option value="en">אנגלית</option><option value="he">עברית</option></select></label>
       </div>
 
       <fieldset className="grid gap-3">

@@ -216,6 +216,7 @@ export type Database = {
           guest_group_filter: string | null;
           guest_side_filter: "michael" | "shoval" | "unassigned" | null;
           guest_group_selections: string[] | null;
+          message_language: "auto" | "he" | "en";
           status: "draft" | "queued" | "running" | "paused" | "completed" | "cancelled";
           min_delay_seconds: number;
           max_delay_seconds: number;
@@ -233,6 +234,7 @@ export type Database = {
           guest_group_filter?: string | null;
           guest_side_filter?: "michael" | "shoval" | "unassigned" | null;
           guest_group_selections?: string[] | null;
+          message_language?: "auto" | "he" | "en";
           status?: "draft" | "queued" | "running" | "paused" | "completed" | "cancelled";
           min_delay_seconds?: number;
           max_delay_seconds?: number;

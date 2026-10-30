@@ -34,6 +34,13 @@ describe("RSVP WhatsApp messages", () => {
     expect(weddingMessage({ kind: "invitation", displayName: "דנה לוי", secureToken: "safe_token" })).toContain("היי דנה ❤️");
   });
 
+  it("can force English for invitations whose stored names are in Hebrew", () => {
+    const body = weddingMessage({ kind: "invitation", displayName: "אנה וטמיר הרשקו", secureToken: "safe_token", language: "en" });
+    expect(body).toContain("Hi there ❤️");
+    expect(body).toContain("Shoval & Michael are getting married");
+    expect(body).not.toContain("היי");
+  });
+
   it("attaches the invitation image only to the initial invitation", () => {
     expect(weddingMessageMediaUrl("invitation")).toBe("https://wedding.my-rem.com/images/wedding-invitation.jpg");
     expect(weddingMessageMediaUrl("reminder")).toBeNull();
