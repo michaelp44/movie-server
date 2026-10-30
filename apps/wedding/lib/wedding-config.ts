@@ -15,6 +15,10 @@ export type MenuCategory = {
   title: string;
   eyebrow: string;
   description: string;
+  image: {
+    src: string;
+    alt: string;
+  };
   items: MenuItem[];
 };
 
@@ -221,84 +225,111 @@ export const weddingConfig: WeddingConfig = {
     ],
   },
   menu: {
-    isPlaceholder: true,
-    note: "זהו תפריט הדגמה. המנות, התיאורים והתמונות יוחלפו בתפריט הסופי של האולם.",
+    isPlaceholder: false,
+    note: "התפריט מבוסס על המסמך שקיבלנו מ־5.91. התמונות להמחשה מתוך הגלריה הקולינרית של האולם ואינן בהכרח צילום של המנות המדויקות. פירוט הקינוחים טרם נמסר.",
     categories: [
       {
         id: "reception",
         title: "קבלת פנים",
         eyebrow: "פותחים את הערב",
-        description: "מנות קטנות שמוגשות ברחבה לצד הקוקטייל הראשון.",
+        description: "מטבח שף יצירתי וים־תיכוני, שמשלב חומרי גלם משובחים וטכניקות בישול חדשניות — 5.91 מטרים מהגלים.",
+        image: { src: "/images/menu/591-reception.jpg", alt: "עמדת אוכל ומנות פתיחה בגלריה הקולינרית של 5.91 — תמונת המחשה" },
         items: [
           {
-            name: "קריספי ארטישוק ירושלמי",
-            description: "קרם לימון כבוש, עשבי תיבול ושמן זית מקומי.",
+            name: "חלת 5.91",
+            description: "נאפת על ידי אמן הלחם גולי פינחסוב ומוגשת עם שמן זית, בלסמי וסלסת עגבניות.",
             image: null,
-            dietaryTags: ["vegan", "gluten-free"],
+            dietaryTags: [],
           },
           {
-            name: "ברוסקטת עגבניות חרוכות",
-            description: "לחם מחמצת, עגבניות צבעוניות, בזיליקום ולאבנה.",
+            name: "צלחת חריפים",
+            description: "פלפל חריף, אריסה אדומה, סחוג ירוק, שום קונפי ושמן זית.",
             image: null,
-            dietaryTags: ["vegetarian"],
+            dietaryTags: [],
           },
           {
-            name: "דג ים על הפלנצ׳ה",
-            description: "איולי לימון, סלסת פלפל ירוק ועשבים רעננים.",
+            name: "חומוס פינוקים",
+            description: "חומוס הבית וטחינת הר ברכה, עם שמן זית קנרייקי.",
             image: null,
-            dietaryTags: ["gluten-free"],
+            dietaryTags: [],
           },
         ],
       },
       {
         id: "starters",
-        title: "פתיחים ומנות ראשונות",
+        title: "מנות ראשונות",
         eyebrow: "למרכז השולחן",
-        description: "צלחות עונתיות לחלוקה, שמגיעות לשולחן בקצב נינוח.",
+        description: "מבחר פתיחים טריים ועשירים בטעמים ים־תיכוניים.",
+        image: { src: "/images/menu/591-herbs.jpg", alt: "מבחר סלטים ועשבי תיבול בגלריה הקולינרית של 5.91 — תמונת המחשה" },
         items: [
           {
-            name: "סלט עלים וחסה פריכה",
-            description: "אגס, שקדים קלויים, ויניגרט הדרים וגבינה כחולה בצד.",
+            name: "קרפצ׳יו חציל",
+            description: "ויניגרט ירקות שרופים, קרם עגבניות, טחינה גולמית, שקד קלוי, אבקת טחינה ועשבי תיבול.",
             image: null,
-            dietaryTags: ["vegetarian", "gluten-free"],
+            dietaryTags: [],
           },
           {
-            name: "קרפצ׳יו סלק צלוי",
-            description: "טחינה לבנה, פיסטוק, נענע וסילאן עדין.",
+            name: "סלט עשבי תיבול ים־תיכוני",
+            description: "עשבי תיבול, חמוציות, שקדים וקשיו, בויניגרט יוזו ורימונים.",
             image: null,
-            dietaryTags: ["vegan", "gluten-free"],
+            dietaryTags: [],
           },
           {
-            name: "טרטר דג ים",
-            description: "מלפפון, אבוקדו, צ׳ילי עדין ושמן כוסברה.",
+            name: "סלט עלים רענן",
+            description: "ויניגרט תפוזים וקראסט קשיו.",
             image: null,
-            dietaryTags: ["gluten-free"],
+            dietaryTags: [],
+          },
+          {
+            name: "סשימי סלמון",
+            description: "פרוסות דקות של סלמון טרי עם ויניגרט צ׳ילי והדרים, שומשום קלוי, בצל ירוק ואיולי חלפיניו.",
+            image: null,
+            dietaryTags: [],
+          },
+          {
+            name: "קרפצ׳יו פילה בקר",
+            description: "פרוס דק בתיבול עדין של שמן זית, שום קונפי, צנונית, סלסת עגבניות ומיקרו בזיל.",
+            image: null,
+            dietaryTags: [],
+          },
+          {
+            name: "קוהיבה",
+            description: "סיגר ממולא בבשר אסאדו מפורק, טחינה וסלסה פיקנטית.",
+            image: null,
+            dietaryTags: [],
           },
         ],
       },
       {
         id: "mains",
         title: "עיקריות",
-        eyebrow: "הבחירה שלכם",
-        description: "מבחר מנות עיקריות שיוגשו עם תוספות עונתיות.",
+        eyebrow: "מהמטבח הפתוח",
+        description: "מנות עיקריות מהגריל, עם שילובים של ירקות, רטבים ותוספות.",
+        image: { src: "/images/menu/591-salmon.jpg", alt: "מנת דג מוגשת בגלריה הקולינרית של 5.91 — תמונת המחשה" },
         items: [
           {
-            name: "פילה בקר בצלייה ארוכה",
-            description: "קרם תפוחי אדמה, ירקות שורש ורוטב יין אדום.",
-            image: null,
-            dietaryTags: ["gluten-free"],
-          },
-          {
-            name: "דג לבן צלוי",
-            description: "פריקה ירוקה, שומר, לימון ועשבי גינה.",
+            name: "פילה דניס צרוב על הפלנצ׳ה",
+            description: "בתיבול עדין של שמן זית וטימין, עם קרם כרובית וריזוטו פטריות כמהין.",
             image: null,
             dietaryTags: [],
           },
           {
-            name: "סטייק כרובית",
-            description: "קרם שקדים, עדשים שחורות, עגבניות צלויות וסלסה ורדה.",
+            name: "פטריית יער",
+            description: "צרובה על הגריל, על קרם סקורדליה וסלסה ורדה.",
             image: null,
-            dietaryTags: ["vegan", "gluten-free"],
+            dietaryTags: [],
+          },
+          {
+            name: "פרגית בגריל",
+            description: "פרגית על הגריל, מתובלת בחמישה תבלינים חמים, לצד בטטה, בוק צ׳וי ורוטב צ׳ימיצ׳ורי.",
+            image: null,
+            dietaryTags: [],
+          },
+          {
+            name: "סטייק אנטריקוט",
+            description: "סטייק משויש שנצרב בתנור גריל מיוחד על רשת ברזל יצוקה, מוגש עם תפוח אדמה קריספי, איולי רמולד וסלט אורוגולה.",
+            image: null,
+            dietaryTags: [],
           },
         ],
       },
@@ -306,19 +337,14 @@ export const weddingConfig: WeddingConfig = {
         id: "desserts",
         title: "קינוחים",
         eyebrow: "משהו מתוק",
-        description: "קינוחים קטנים לרחבה ולשולחן הקפה.",
+        description: "וכמובן, אי אפשר להישאר בלי טעם מתוק בפה.",
+        image: { src: "/images/menu/591-dessert.jpg", alt: "קינוח מתוך הגלריה הקולינרית של 5.91 — תמונת המחשה" },
         items: [
           {
-            name: "פבלובה אישית",
-            description: "קרם וניל, פירות עונה וקולי פטל.",
+            name: "פירוט הקינוחים יתווסף בקרוב",
+            description: "המסמך שקיבלנו מהאולם לא כלל עדיין את שמות הקינוחים.",
             image: null,
-            dietaryTags: ["vegetarian", "gluten-free"],
-          },
-          {
-            name: "שוקולד, שמן זית ומלח ים",
-            description: "קרם שוקולד מריר, קראמבל קקאו ואגוזי לוז.",
-            image: null,
-            dietaryTags: ["vegan"],
+            dietaryTags: [],
           },
         ],
       },
