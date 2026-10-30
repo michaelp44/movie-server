@@ -1,0 +1,18 @@
+# Local WhatsApp sessions and runtime state must never be uploaded to Vercel.
+data/
+logs/
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Build artifacts and installed dependencies are recreated by Vercel.
+**/node_modules/
+**/.next/
+**/coverage/
+
+# Other applications in this monorepo are not part of the wedding deployment.
+apps/api/
+apps/web/
+apps/whatsapp-agent/
+
+# Local editor and machine-specific files.
+.idea/
