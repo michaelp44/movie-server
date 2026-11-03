@@ -7,6 +7,8 @@ const labels = {
   confirmed: "אישרו הגעה",
   declined: "הזמנות שסירבו",
   pending: "ממתינים למענה",
+  contactedInvitations: "נשלחה להם הודעה",
+  openedInvitations: "פתחו את הקישור",
   tablesAssigned: "הזמנות עם שולחן",
   photos: "קבצי מדיה",
   guestbook: "ברכות",
@@ -26,6 +28,7 @@ export default async function AdminOverviewPage() {
           </article>
         ))}
       </section>
+      <p className="mt-4 text-xs leading-5 text-black/55">שליחות ופתיחות נספרות לפי הזמנות ייחודיות. זוג או משפחה נספרים פעם אחת, גם לאחר הודעות או פתיחות חוזרות.</p>
     </>
   );
 }

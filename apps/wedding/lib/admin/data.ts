@@ -15,16 +15,26 @@ function throwOnError(error: { message: string } | null): void {
 export async function getAdminOverview(): Promise<AdminOverview> {
   await requireAdmin();
   const db = createAdminDataClient();
-  const [invitationResult, photoResult, guestbookResult, songResult] = await Promise.all([
+  const [invitationResult, photoResult, guestbookResult, songResult, contactedResult, openedResult] = await Promise.all([
     db.from("invitations").select("number_invited, number_confirmed, rsvp_status, table_number"),
     db.from("photo_uploads").select("id", { count: "exact", head: true }),
     db.from("guestbook_messages").select("id", { count: "exact", head: true }),
     db.from("song_requests").select("id", { count: "exact", head: true }),
+    // Count parent invitations, not delivery/activity rows, so reminders and
+    // repeated visits never inflate these totals or hit the API row limit.
+    db.from("invitations")
+      .select("id, message_deliveries!inner(id)", { count: "exact", head: true })
+      .eq("message_deliveries.status", "sent"),
+    db.from("invitations")
+      .select("id, invitation_activity!inner(id)", { count: "exact", head: true })
+      .in("invitation_activity.event_type", ["link_opened", "rsvp_page_viewed"]),
   ]);
   throwOnError(invitationResult.error);
   throwOnError(photoResult.error);
   throwOnError(guestbookResult.error);
   throwOnError(songResult.error);
+  throwOnError(contactedResult.error);
+  throwOnError(openedResult.error);
   const invitations = invitationResult.data ?? [];
   return {
     totalInvitations: invitations.length,
@@ -32,6 +42,8 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     confirmed: invitations.reduce((sum, row) => sum + Number(row.number_confirmed ?? 0), 0),
     declined: invitations.filter((row) => row.rsvp_status === "declined").length,
     pending: invitations.filter((row) => row.rsvp_status === "pending").length,
+    contactedInvitations: contactedResult.count ?? 0,
+    openedInvitations: openedResult.count ?? 0,
     tablesAssigned: invitations.filter((row) => row.table_number).length,
     photos: photoResult.count ?? 0,
     guestbook: guestbookResult.count ?? 0,

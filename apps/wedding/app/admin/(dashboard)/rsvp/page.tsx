@@ -40,12 +40,15 @@ export default async function AdminRsvpPage({ searchParams }: {
       <AdminNotice>{params.notice}</AdminNotice>
       <div className="mb-4 flex justify-end"><a href="/api/admin/rsvp.csv" className="inline-flex min-h-11 items-center rounded-xl border border-black/15 bg-white px-4 text-sm font-semibold">הורדת CSV</a></div>
       <div className="mb-4 flex flex-wrap gap-2"><Link href="/admin/rsvp/campaigns" className="inline-flex min-h-11 items-center rounded-xl bg-[#1d1b18] px-4 text-sm font-semibold text-white">קמפיינים אוטומטיים</Link><Link href="/admin/rsvp?contact=unsent" className="inline-flex min-h-11 items-center rounded-xl border border-black/15 bg-white px-4 text-sm font-semibold">תור שליחה ידני</Link><Link href="/admin/rsvp/calls" className="inline-flex min-h-11 items-center rounded-xl border border-black/15 bg-white px-4 text-sm font-semibold">תור שיחות</Link><Link href="/admin/rsvp/activity" className="inline-flex min-h-11 items-center rounded-xl border border-black/15 bg-white px-4 text-sm font-semibold">יומן פעילות</Link></div>
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         <Metric label="הזמנות" value={counts.invitations} />
         <Metric label="סה״כ מוזמנים" value={counts.invited} />
         <Metric label="מגיעים" value={counts.confirmed} />
         <Metric label="ממתינים לתשובה" value={counts.pending} />
+        <Metric label="נשלחה להם הודעה" value={overview.contactedInvitations} />
+        <Metric label="פתחו את הקישור" value={overview.openedInvitations} />
       </div>
+      <p className="mb-6 text-xs leading-5 text-black/55">שליחות ופתיחות נספרות לפי הזמנות ייחודיות. זוג או משפחה נספרים פעם אחת, גם לאחר הודעות או פתיחות חוזרות.</p>
       <section aria-labelledby="dietary-totals-title" className="mb-6 rounded-2xl border border-[#a9854f]/30 bg-white p-4 sm:p-5">
         <h2 id="dietary-totals-title" className="font-bold">מנות מיוחדות לפי אישורי הגעה</h2>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">

@@ -4,6 +4,8 @@ export interface AdminOverview {
   confirmed: number;
   declined: number;
   pending: number;
+  contactedInvitations: number;
+  openedInvitations: number;
   tablesAssigned: number;
   photos: number;
   guestbook: number;
